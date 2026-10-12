@@ -1,12 +1,25 @@
 import AppKit
 import SwiftUI
 
-/// Borderless, non-activating HUD panel. It never takes focus — keyboard input
-/// comes from the event tap — so the app you're switching from stays active.
+/// Borderless, non-activating panel. It never takes focus — keyboard input comes
+/// from the event tap — so the app you're switching from stays active.
+///
+/// The system window shadow is off: it hugs the edge of a masked borderless
+/// window and leaves a hard dark rim. Instead the window is larger than the
+/// visible panel by `shadowMargin` on every side, and `PanelChrome` draws a soft
+/// shadow into that margin. Blur mask, hairline and shadow share one path, so
+/// every layer follows exactly the same curve. Material and colours follow the
+/// system light/dark appearance.
 final class SwitcherPanel: NSPanel {
-    static let cornerRadius: CGFloat = 24
+    static let cornerRadius: CGFloat = 22
+    static let shadowRadius: CGFloat = 14
+    static let shadowOffsetY: CGFloat = 5
+    /// Transparent room around the panel for the shadow to fall into. Derived from
+    /// the shadow so its blur (which reaches about 2 × radius, plus the offset)
+    /// always fades out fully before the window edge instead of being clipped.
+    static let shadowMargin: CGFloat = (shadowRadius * 2 + shadowOffsetY + 6).rounded(.up)
 
-    private let effect = NSVisualEffectView()
+    private let chrome = PanelChrome()
     private let mouse = MouseCatcher()
 
     init(model: SwitcherModel,
@@ -19,70 +32,127 @@ final class SwitcherPanel: NSPanel {
         level = .popUpMenu
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = true
+        hasShadow = false
         hidesOnDeactivate = false
         animationBehavior = .none
         isReleasedWhenClosed = false
-        appearance = NSAppearance(named: .darkAqua)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
-
-        effect.material = .hudWindow
-        effect.blendingMode = .behindWindow
-        effect.state = .active
-        effect.maskImage = Self.roundedMask(radius: Self.cornerRadius)
 
         let hosting = NSHostingView(rootView: SwitcherView(model: model))
         hosting.sizingOptions = []
         hosting.autoresizingMask = [.width, .height]
-        effect.addSubview(hosting)
-
-        // Hairline border for definition against busy wallpapers.
-        let border = NSView()
-        border.wantsLayer = true
-        border.layer?.cornerRadius = Self.cornerRadius
-        border.layer?.cornerCurve = .continuous
-        border.layer?.borderWidth = 1
-        border.layer?.borderColor = NSColor.white.withAlphaComponent(0.1).cgColor
-        border.autoresizingMask = [.width, .height]
-        effect.addSubview(border)
+        chrome.content.addSubview(hosting)
 
         mouse.onMove = onHover
         mouse.onClick = onClick
         mouse.onDragHover = onDragHover
         mouse.autoresizingMask = [.width, .height]
-        effect.addSubview(mouse)
+        chrome.content.addSubview(mouse)
 
-        contentView = effect
+        let root = NSView()
+        root.addSubview(chrome)
+        contentView = root
     }
 
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
+    /// The visible panel's rectangle in screen coordinates.
+    private var panelFrame: CGRect { frame.insetBy(dx: Self.shadowMargin, dy: Self.shadowMargin) }
+
     func show(size: CGSize, on screen: NSScreen) {
         let vf = screen.visibleFrame
-        let origin = CGPoint(x: (vf.midX - size.width / 2).rounded(), y: (vf.midY - size.height / 2).rounded())
-        setFrame(CGRect(origin: origin, size: size), display: false)
+        let m = Self.shadowMargin
+        let origin = CGPoint(x: (vf.midX - size.width / 2).rounded() - m,
+                             y: (vf.midY - size.height / 2).rounded() - m)
+        setFrame(CGRect(origin: origin, size: CGSize(width: size.width + 2 * m, height: size.height + 2 * m)),
+                 display: false)
+        chrome.frame = CGRect(x: m, y: m, width: size.width, height: size.height)
         alphaValue = 1
         orderFrontRegardless()
-        invalidateShadow()
     }
 
-    /// Converts a screen point to the content's top-left-origin coordinates.
+    /// Converts a screen point to the panel content's top-left-origin coordinates.
     func contentPoint(fromScreen point: CGPoint) -> CGPoint? {
-        guard isVisible, frame.contains(point) else { return nil }
-        return CGPoint(x: point.x - frame.minX, y: frame.maxY - point.y)
+        let panel = panelFrame
+        guard isVisible, panel.contains(point) else { return nil }
+        return CGPoint(x: point.x - panel.minX, y: panel.maxY - point.y)
+    }
+}
+
+/// The visible panel: soft shadow, blurred material clipped to a continuous
+/// rounded rect, and an appearance-aware hairline, all from the same path.
+private final class PanelChrome: NSView {
+    /// Where the switcher's content goes (clipped to the rounded shape).
+    let content: NSVisualEffectView = {
+        let effect = NSVisualEffectView()
+        effect.material = .popover          // adapts to light and dark mode
+        effect.blendingMode = .behindWindow
+        effect.state = .active
+        effect.wantsLayer = true
+        effect.layer?.cornerRadius = SwitcherPanel.cornerRadius
+        effect.layer?.cornerCurve = .continuous
+        effect.layer?.masksToBounds = true
+        effect.autoresizingMask = [.width, .height]
+        return effect
+    }()
+
+    private let shadowLayer = CALayer()
+    private let hairline = CAShapeLayer()
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layer?.masksToBounds = false
+        layer?.addSublayer(shadowLayer)
+        addSubview(content)
+        // Above the content so it frames thumbnails too.
+        content.layer?.addSublayer(hairline)
+        hairline.fillColor = nil
+        hairline.lineWidth = 1
+        applyAppearance()
     }
 
-    private static func roundedMask(radius: CGFloat) -> NSImage {
-        let edge = radius * 2 + 1
-        let image = NSImage(size: CGSize(width: edge, height: edge), flipped: false) { rect in
-            NSColor.black.setFill()
-            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
-            return true
-        }
-        image.capInsets = NSEdgeInsets(top: radius, left: radius, bottom: radius, right: radius)
-        image.resizingMode = .stretch
-        return image
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    override func layout() {
+        super.layout()
+        content.frame = bounds
+        let path = Self.continuousPath(bounds, radius: SwitcherPanel.cornerRadius)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        shadowLayer.frame = bounds
+        shadowLayer.shadowPath = path
+        // Inset by half the line width so the 1 pt stroke sits fully inside the
+        // clip on whole pixels instead of being cut in half by it.
+        hairline.frame = bounds
+        hairline.path = Self.continuousPath(bounds.insetBy(dx: 0.5, dy: 0.5),
+                                            radius: SwitcherPanel.cornerRadius - 0.5)
+        CATransaction.commit()
+    }
+
+    /// The same continuous ("squircle") curve as the layer's `.continuous` corners.
+    private static func continuousPath(_ rect: CGRect, radius: CGFloat) -> CGPath {
+        RoundedRectangle(cornerRadius: radius, style: .continuous).path(in: rect).cgPath
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        applyAppearance()
+    }
+
+    private func applyAppearance() {
+        let dark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        // Subtle lift: soft, slightly below, lighter in light mode.
+        shadowLayer.shadowColor = NSColor.black.cgColor
+        shadowLayer.shadowOpacity = dark ? 0.3 : 0.14
+        shadowLayer.shadowRadius = SwitcherPanel.shadowRadius
+        shadowLayer.shadowOffset = CGSize(width: 0, height: -SwitcherPanel.shadowOffsetY)
+        hairline.strokeColor = (dark ? NSColor.white.withAlphaComponent(0.14)
+                                     : NSColor.black.withAlphaComponent(0.10)).cgColor
+        CATransaction.commit()
     }
 }
 

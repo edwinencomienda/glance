@@ -63,17 +63,17 @@ struct TileView: View, Equatable {
             if titleHeight > 0 {
                 Text(window.title)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(selected ? 0.95 : 0.7))
+                    .foregroundStyle(.primary.opacity(selected ? 1 : 0.7))
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(width: thumbSize.width, height: titleHeight, alignment: .bottom)
             }
         }
         .padding(SwitcherLayout.tileInset)
+        // Filled highlight, no outline: thin strokes smear on non-Retina displays.
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.white.opacity(selected ? 0.14 : 0))
-                .strokeBorder(.white.opacity(selected ? 0.18 : 0), lineWidth: 1)
+                .fill(.primary.opacity(selected ? 0.11 : 0))
         }
     }
 
@@ -96,7 +96,7 @@ struct TileView: View, Equatable {
         } else {
             // Placeholder until the first capture lands (usually a few ms).
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(.white.opacity(0.05))
+                .fill(.primary.opacity(0.06))
                 .overlay {
                     if let icon = window.icon {
                         Image(nsImage: icon)

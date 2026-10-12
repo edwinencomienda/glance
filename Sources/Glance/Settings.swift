@@ -26,6 +26,27 @@ final class Settings {
         var label: String { self == .all ? "All Spaces" : "Current Space only" }
     }
 
+    enum Theme: String, CaseIterable, Identifiable {
+        case system, light, dark
+        var id: String { rawValue }
+        var label: String { rawValue.capitalized }
+        var symbol: String {
+            switch self {
+            case .system: "circle.lefthalf.filled"
+            case .light: "sun.max"
+            case .dark: "moon"
+            }
+        }
+        /// `nil` follows the system appearance.
+        var appearance: NSAppearance? {
+            switch self {
+            case .system: nil
+            case .light: NSAppearance(named: .aqua)
+            case .dark: NSAppearance(named: .darkAqua)
+            }
+        }
+    }
+
     enum DisplayStyle: String, CaseIterable, Identifiable {
         case thumbnails, icons
         var id: String { rawValue }
@@ -54,7 +75,7 @@ final class Settings {
         }
     }
 
-    enum Change { case shortcut, menuBarIcon }
+    enum Change { case shortcut, menuBarIcon, theme }
 
     @ObservationIgnored var onChange: ((Change) -> Void)?
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -72,6 +93,9 @@ final class Settings {
     /// window switches without drawing anything.
     var showDelayMs: Double {
         didSet { save(showDelayMs, "showDelayMs") }
+    }
+    var theme: Theme {
+        didSet { save(theme.rawValue, "theme"); onChange?(.theme) }
     }
     var displayStyle: DisplayStyle {
         didSet { save(displayStyle.rawValue, "displayStyle") }
@@ -96,6 +120,7 @@ final class Settings {
         spacesScope = d.string(forKey: "spacesScope").flatMap(SpacesScope.init) ?? .all
         let delay = d.object(forKey: "showDelayMs") as? Double ?? 70
         showDelayMs = min(max(delay, Self.showDelayRange.lowerBound), Self.showDelayRange.upperBound)
+        theme = d.string(forKey: "theme").flatMap(Theme.init) ?? .system
         displayStyle = d.string(forKey: "displayStyle").flatMap(DisplayStyle.init) ?? .thumbnails
         thumbnailSize = d.string(forKey: "thumbnailSize").flatMap(ThumbnailSize.init) ?? .medium
         showTitles = d.object(forKey: "showTitles") as? Bool ?? true

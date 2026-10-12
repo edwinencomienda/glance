@@ -28,7 +28,7 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
 | --- | --- |
 | `main.swift` | Boots `NSApplication` with `AppDelegate`. |
 | `AppDelegate.swift` | Menu bar item (Settings… / Quit, plus a warning item if a permission is missing), permission prompts and polling, reopen → Settings, applying eager settings changes, signal handlers that restore native ⌘⇥. |
-| `Settings.swift` | `@Observable` preferences persisted in `UserDefaults`. Defaults reproduce the original behaviour. Most values are read when needed (on `open()`); `onChange` applies the shortcut and the menu bar icon immediately. |
+| `Settings.swift` | `@Observable` preferences persisted in `UserDefaults`. Defaults reproduce the original behaviour. Most values are read when needed (on `open()`); `onChange` applies the shortcut, the menu bar icon and the theme (`NSApp.appearance`) immediately. |
 | `SettingsView.swift` | Branded Settings window plus `SettingsWindowController`. A header in the app icon's blue, with its tilted window cards and `GlanceMascot` (the logo as a live character: eyes follow the pointer and it blinks, but not with Reduce Motion), then cards built from small components (`ChoiceTile`, `Keycap`, `AppChip`, …) in the `Brand` colours. The window is created on demand and released on close, so the 1 s permission/login-item refresh and the blink loop only run while it's open. While it's open, Glance switches to the `.regular` activation policy (Dock icon, ⌘⇥, main menu with ⌘W/⌘Q) and back to `.accessory` on close. |
 | `GlobalHotkeys.swift` | `RegisterEventHotKey` wrapper. ⌘⇥ / ⌘⇧⇥ are always registered; ⌘+Esc/↩/arrows only while the panel is visible. These still fire under Secure Event Input. |
 | `MenuBarIcon.swift` | Draws the logo (`Resources/Logo/glance-logo.svg`) as a template `NSImage` for the status item. Paths mirror the SVG's coordinates. |
@@ -40,7 +40,7 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
 | `ThumbnailService.swift` | ScreenCaptureKit screenshots at display pixel size, captured in parallel and cached per `CGWindowID`. Each open cancels the previous refresh. Not used at all in "App icons" mode. |
 | `SwitcherModel.swift` | `@Observable` model, plus `SwitcherLayout`: grid sizing, panel size, hit-testing. In icon mode (`iconsOnly`) the "thumb" area is the icon, about 60% of a narrower tile. |
 | `SwitcherView.swift` | SwiftUI grid. `TileView` is `Equatable`, so a selection change re-renders only two tiles. |
-| `SwitcherPanel.swift` | Borderless, non-activating `NSPanel` with a masked `NSVisualEffectView` (HUD material, 24 pt continuous corners). `MouseCatcher` turns mouse input into hover/click via an always-active tracking area. It's also a drag destination that reports drag hover positions but never accepts a drop. |
+| `SwitcherPanel.swift` | Borderless, non-activating `NSPanel`. The system window shadow is off (it leaves a hard rim on a masked borderless window). Instead the window is `shadowMargin` larger on each side, and `PanelChrome` draws a soft layer shadow into that margin (the margin is derived from the shadow radius and offset, so the blur never gets clipped into a hard edge), then a `.popover` `NSVisualEffectView` clipped to 22 pt continuous corners, then an appearance-aware hairline. All three use one continuous path, and everything follows the system light/dark appearance. `MouseCatcher` turns mouse input into hover/click via an always-active tracking area. It's also a drag destination that reports drag hover positions but never accepts a drop. |
 | `WindowFocus.swift` | Focuses Glance's own windows directly with `makeKeyAndOrderFront`. For other apps' windows it focuses one exact window: SkyLight `_SLPSSetFrontProcessWithOptions` and the make-key event records, then sets AX main and raises the window, which switches Spaces when needed. Prefetches AX elements for other-Space windows when the switcher opens. Also toggles the native ⌘⇥ symbolic hotkeys. |
 | `AXWindowResolver.swift` | Maps a `CGWindowID` to its AX element: tries `kAXWindowsAttribute` first, then falls back to scanning `_AXUIElementCreateWithRemoteToken` element ids, needed for windows on other Spaces. Cached; 200 ms scan budget; 100 ms per-call timeout. |
 
@@ -97,7 +97,8 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
   during a drag. Drag end is detected by the same open-only input poll that
   watches ⌘.
 - **Settings without overhead.** Values are read at the moment they're used, so
-  there are no observers on the hot path. The only eager changes are the
+  there are no observers on the hot path. The only eager changes are the theme
+  (`NSApp.appearance`, covering the panel and Settings), the
   shortcut (re-registers the hotkeys and toggles the native ⌘⇥: disabled for
   ⌘⇥, restored for ⌥⇥) and the menu bar icon visibility. Hiding the icon leaves
   `applicationShouldHandleReopen` as the way back into Settings.

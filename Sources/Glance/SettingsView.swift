@@ -221,6 +221,17 @@ struct SettingsView: View {
     private var appearance: some View {
         SettingsCard("Appearance", symbol: "paintbrush") {
             HStack(spacing: tileSpacing) {
+                ForEach(Settings.Theme.allCases) { theme in
+                    ChoiceTile(selected: settings.theme == theme, compact: true) {
+                        settings.theme = theme
+                    } content: {
+                        Label(theme.label, systemImage: theme.symbol)
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                }
+            }
+            Divider()
+            HStack(spacing: tileSpacing) {
                 ForEach(Settings.DisplayStyle.allCases) { style in
                     ChoiceTile(selected: settings.displayStyle == style, compact: true) {
                         settings.displayStyle = style

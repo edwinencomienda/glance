@@ -139,6 +139,9 @@ changes:
       desktop and other Spaces, a quick tap returns to the previous window, and
       choosing a window on another Space switches to that Space
 - [ ] No blank or tiny helper tiles (e.g. browser toolbar overlays in full screen)
+- [ ] The panel follows the Theme setting (System follows macOS), with clean edges: a soft
+      shadow that fades out fully (no clipped line), no dark rim, the hairline following
+      the corners exactly
 - [ ] Many windows (20+) shrink into a grid that fits the screen
 - [ ] Works over a full-screen app and on a second display
 - [ ] Quitting from the menu bar restores the native ⌘⇥

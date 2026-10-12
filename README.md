@@ -15,6 +15,10 @@
   <img src="https://img.shields.io/badge/native-AppKit%20%2B%20SwiftUI-1258E8" alt="Native AppKit + SwiftUI">
 </p>
 
+<p align="center">
+  <img src="docs/images/settings.png" width="420" alt="Glance Settings window">
+</p>
+
 ## Usage
 
 | Keys | Action |
@@ -33,16 +37,12 @@ Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,)
 
 ## Settings
 
-<p align="center">
-  <img src="docs/images/settings.png" width="420" alt="Glance Settings window">
-</p>
-
 | Section | Options |
 | --- | --- |
 | General | Launch at login · Show icon in menu bar |
 | Shortcut | `⌘⇥` (replaces the macOS app switcher) or `⌥⇥` (keeps it) |
 | Switcher | Show windows from all Spaces or the current Space only · Panel delay (0–300 ms; a quick tap within it switches without showing the panel) |
-| Appearance | Show as window thumbnails or app icons (one tile per window either way) · Size (small / medium / large) · Show window titles |
+| Appearance | Theme (System / Light / Dark, for the switcher and Settings) · Show as window thumbnails or app icons (one tile per window either way) · Size (small / medium / large) · Show window titles |
 | Excluded Apps | Apps whose windows never appear in the switcher |
 | Permissions | Accessibility and Screen Recording status, with shortcuts to fix them |
 

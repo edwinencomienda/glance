@@ -20,8 +20,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             switch change {
             case .shortcut: if self.started { self.switcher.applyShortcut() }
             case .menuBarIcon: self.statusItem?.isVisible = self.settings.showMenuBarIcon
+            case .theme: NSApp.appearance = self.settings.theme.appearance
             }
         }
+        // Applies to every Glance window: the switcher panel and Settings.
+        NSApp.appearance = settings.theme.appearance
 
         if !CGPreflightScreenCaptureAccess() { CGRequestScreenCaptureAccess() }
 
