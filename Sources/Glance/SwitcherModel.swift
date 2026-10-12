@@ -20,6 +20,8 @@ struct SwitcherLayout: Equatable {
     var thumbSize: CGSize
     /// Height of the title row under each thumbnail; 0 when titles are hidden.
     var titleHeight: CGFloat = defaultTitleHeight
+    /// App icons instead of window thumbnails; `thumbSize.height` is the icon size.
+    var iconsOnly = false
     var columns: Int
     var rows: Int
     var count: Int
@@ -43,13 +45,17 @@ struct SwitcherLayout: Equatable {
 
     /// Fits `count` tiles into `bounds`, shrinking thumbnails only when needed.
     static func make(count: Int, in bounds: CGSize,
-                     thumbWidth: CGFloat = 232, showTitles: Bool = true) -> SwitcherLayout {
+                     thumbWidth: CGFloat = 232, showTitles: Bool = true,
+                     iconsOnly: Bool = false) -> SwitcherLayout {
         let maxW = bounds.width * 0.9, maxH = bounds.height * 0.85
+        // Thumbnails are 16:10; in icon mode the "thumb" is a square-ish icon area.
+        let aspect: CGFloat = iconsOnly ? 0.6 : 0.625
+        let minWidth: CGFloat = iconsOnly ? 56 : 96
         var thumbW = thumbWidth
         while true {
-            let thumb = CGSize(width: thumbW, height: (thumbW * 0.625).rounded())
+            let thumb = CGSize(width: thumbW, height: (thumbW * aspect).rounded())
             var layout = SwitcherLayout(thumbSize: thumb, titleHeight: showTitles ? defaultTitleHeight : 0,
-                                        columns: 1, rows: 1, count: count)
+                                        iconsOnly: iconsOnly, columns: 1, rows: 1, count: count)
             let item = layout.itemSize
             let fitCols = Int((maxW - padding * 2 + spacing) / (item.width + spacing))
             let cols = max(1, min(count, fitCols))
@@ -57,7 +63,7 @@ struct SwitcherLayout: Equatable {
             // Rebalance so the last row isn't nearly empty.
             layout.columns = Int((Double(count) / Double(rows)).rounded(.up))
             layout.rows = rows
-            if layout.panelSize.height <= maxH || thumbW <= 96 { return layout }
+            if layout.panelSize.height <= maxH || thumbW <= minWidth { return layout }
             thumbW = (thumbW * 0.88).rounded()
         }
     }

@@ -17,6 +17,7 @@ struct SwitcherView: View {
                                 image: model.thumbnails[window.id],
                                 thumbSize: layout.thumbSize,
                                 titleHeight: layout.titleHeight,
+                                iconsOnly: layout.iconsOnly,
                                 selected: index == model.selected
                             )
                             .equatable()
@@ -35,11 +36,12 @@ struct TileView: View, Equatable {
     let image: CGImage?
     let thumbSize: CGSize
     let titleHeight: CGFloat
+    let iconsOnly: Bool
     let selected: Bool
 
     static func == (a: TileView, b: TileView) -> Bool {
         a.window == b.window && a.image === b.image && a.thumbSize == b.thumbSize
-            && a.titleHeight == b.titleHeight && a.selected == b.selected
+            && a.titleHeight == b.titleHeight && a.iconsOnly == b.iconsOnly && a.selected == b.selected
     }
 
     private var iconSize: CGFloat { max(22, min(32, thumbSize.width * 0.14)) }
@@ -49,7 +51,7 @@ struct TileView: View, Equatable {
             thumbnail
                 .frame(width: thumbSize.width, height: thumbSize.height)
                 .overlay(alignment: .bottomLeading) {
-                    if image != nil, let icon = window.icon {
+                    if !iconsOnly, image != nil, let icon = window.icon {
                         Image(nsImage: icon)
                             .resizable()
                             .frame(width: iconSize, height: iconSize)
@@ -76,7 +78,15 @@ struct TileView: View, Equatable {
     }
 
     @ViewBuilder private var thumbnail: some View {
-        if let image {
+        if iconsOnly {
+            if let icon = window.icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: thumbSize.height, height: thumbSize.height)
+                    .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+            }
+        } else if let image {
             Image(decorative: image, scale: 2)
                 .resizable()
                 .interpolation(.high)

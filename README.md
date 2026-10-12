@@ -42,11 +42,14 @@ Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,)
 | General | Launch at login · Show icon in menu bar |
 | Shortcut | `⌘⇥` (replaces the macOS app switcher) or `⌥⇥` (keeps it) |
 | Switcher | Show windows from all Spaces or the current Space only · Panel delay (0–300 ms; a quick tap within it switches without showing the panel) |
-| Appearance | Thumbnail size (small / medium / large) · Show window titles |
+| Appearance | Show as window thumbnails or app icons (one tile per window either way) · Size (small / medium / large) · Show window titles |
 | Excluded Apps | Apps whose windows never appear in the switcher |
 | Permissions | Accessibility and Screen Recording status, with shortcuts to fix them |
 
-Changes apply immediately. If you hide the menu bar icon, open Glance again (from
+Changes apply immediately. While Settings is open, Glance shows in the Dock and in
+⌘⇥ (Glance's switcher and the macOS one) like a regular app, with ⌘W to close.
+It goes back to living only in the menu bar when you close Settings. If you hide
+the menu bar icon, open Glance again (from
 Spotlight or Finder) to bring up Settings. Settings also opens on first
 launch, until Accessibility is granted.
 

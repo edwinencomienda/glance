@@ -6,6 +6,8 @@ import UniformTypeIdentifiers
 
 /// Owns the Settings window. The window (with its 1 s status refresh and the
 /// mascot's blinking) only exists while it's open, so Settings costs nothing at idle.
+/// While it's open Glance becomes a regular app, so the window shows up in the
+/// Dock, in ⌘⇥ (Glance's and the system's) and gets a standard menu bar.
 @MainActor
 final class SettingsWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
@@ -23,9 +25,11 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             window.center()
             self.window = window
         }
-        // Defer past the status-item menu's tracking loop; activating while the menu
-        // is still closing is sometimes ignored. orderFrontRegardless guarantees the
-        // window appears even if cooperative activation is declined.
+        // Become a regular app first; activating in the same turn as the policy
+        // change is often declined. Deferring also gets past the status-item menu's
+        // tracking loop, and orderFrontRegardless guarantees the window appears even
+        // if cooperative activation is declined.
+        NSApp.setActivationPolicy(.regular)
         DispatchQueue.main.async { [weak self] in
             guard let window = self?.window else { return }
             NSApp.activate()
@@ -39,6 +43,8 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         window = nil
+        // Back to a menu bar-only app: no Dock icon, not in ⌘⇥.
+        NSApp.setActivationPolicy(.accessory)
     }
 }
 
@@ -55,6 +61,7 @@ enum Brand {
 struct SettingsView: View {
     @Bindable private var settings = Settings.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginNeedsApproval = SMAppService.mainApp.status == .requiresApproval
@@ -201,9 +208,10 @@ struct SettingsView: View {
                     .frame(width: 170)
                 Text("\(Int(settings.showDelayMs)) ms")
                     .font(.system(size: 11, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(Brand.blue)
+                    // Brand blue is too dark to read on the dark-mode background.
+                    .foregroundStyle(colorScheme == .dark ? Brand.light : Brand.blue)
                     .padding(.horizontal, 7).padding(.vertical, 3)
-                    .background(Brand.blue.opacity(0.12), in: Capsule())
+                    .background(Brand.blue.opacity(colorScheme == .dark ? 0.25 : 0.12), in: Capsule())
                     .frame(width: 62, alignment: .trailing)
             }
             Note("A quick \(settings.shortcut.symbol) within the delay switches instantly, no panel.")
@@ -213,13 +221,35 @@ struct SettingsView: View {
     private var appearance: some View {
         SettingsCard("Appearance", symbol: "paintbrush") {
             HStack(spacing: tileSpacing) {
+                ForEach(Settings.DisplayStyle.allCases) { style in
+                    ChoiceTile(selected: settings.displayStyle == style, compact: true) {
+                        settings.displayStyle = style
+                    } content: {
+                        HStack(spacing: 10) {
+                            Group {
+                                if style == .thumbnails { ThumbnailGlyph(scale: 0.75) } else { IconGlyph(size: 22) }
+                            }
+                            .frame(width: 34, height: 26)
+                            Text(style.label).font(.system(size: 12, weight: .medium))
+                        }
+                    }
+                }
+            }
+            HStack(spacing: tileSpacing) {
                 ForEach(Settings.ThumbnailSize.allCases) { size in
+                    let scale: CGFloat = size == .small ? 0.7 : size == .medium ? 0.85 : 1
                     ChoiceTile(selected: settings.thumbnailSize == size, compact: true) {
                         settings.thumbnailSize = size
                     } content: {
                         VStack(spacing: 8) {
-                            ThumbnailGlyph(scale: size == .small ? 0.7 : size == .medium ? 0.85 : 1)
-                                .frame(height: 30)
+                            Group {
+                                if settings.displayStyle == .icons {
+                                    IconGlyph(size: 26 * scale)
+                                } else {
+                                    ThumbnailGlyph(scale: scale)
+                                }
+                            }
+                            .frame(height: 30)
                             Text(size.label).font(.system(size: 11, weight: .medium))
                         }
                     }
@@ -227,6 +257,9 @@ struct SettingsView: View {
             }
             Divider()
             ToggleRow("Show window titles", isOn: $settings.showTitles)
+            if settings.displayStyle == .icons && !settings.showTitles {
+                Note("With app icons, titles tell apart windows of the same app.")
+            }
         }
     }
 
@@ -553,6 +586,22 @@ private struct ThumbnailGlyph: View {
                 .rotationEffect(.degrees(6))
                 .offset(x: 5 * scale, y: 2 * scale)
         }
+    }
+}
+
+/// An app-icon tile with the Glance mark, for the "App icons" option.
+private struct IconGlyph: View {
+    let size: CGFloat
+    @Environment(\.onBrandFill) private var onBrandFill
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+            .fill(onBrandFill ? Color.white : Brand.blue)
+            .frame(width: size, height: size)
+            .overlay {
+                GlanceMascot(look: .zero, reduceMotion: true, color: onBrandFill ? Brand.blue : .white)
+                    .frame(width: size * 0.7)
+            }
     }
 }
 

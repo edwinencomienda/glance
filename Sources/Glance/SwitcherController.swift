@@ -164,21 +164,27 @@ final class SwitcherController {
 
         let screen = Self.screenUnderMouse()
         self.screen = screen
+        let iconsOnly = settings.displayStyle == .icons
         let layout = SwitcherLayout.make(count: windows.count, in: screen.visibleFrame.size,
-                                         thumbWidth: settings.thumbnailSize.width,
-                                         showTitles: settings.showTitles)
+                                         thumbWidth: iconsOnly ? settings.thumbnailSize.iconTileWidth
+                                                               : settings.thumbnailSize.width,
+                                         showTitles: settings.showTitles,
+                                         iconsOnly: iconsOnly)
 
         model.windows = windows
         model.layout = layout
-        model.thumbnails = thumbnails.cached(for: windows)
+        model.thumbnails = iconsOnly ? [:] : thumbnails.cached(for: windows)
         model.selected = windows.count > 1 ? (reverse ? windows.count - 1 : 1) : 0
 
         // Warm AX lookups for other-Space windows so switching to one is instant.
         let otherIDs = Set(listed.others.map(\.id))
         WindowFocus.prefetch(windows.filter { otherIDs.contains($0.id) }, live: Set(windows.map(\.id)))
 
-        thumbnails.refresh(windows, maxSize: layout.thumbSize, scale: screen.backingScaleFactor) { [weak self] id, image in
-            self?.model.thumbnails[id] = image
+        // Icon mode captures nothing at all.
+        if !iconsOnly {
+            thumbnails.refresh(windows, maxSize: layout.thumbSize, scale: screen.backingScaleFactor) { [weak self] id, image in
+                self?.model.thumbnails[id] = image
+            }
         }
 
         showTimer = Timer.scheduledTimer(withTimeInterval: settings.showDelayMs / 1000, repeats: false) { [weak self] _ in

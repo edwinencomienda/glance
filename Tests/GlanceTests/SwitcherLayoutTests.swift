@@ -38,6 +38,15 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertEqual(withTitles.itemSize.height - noTitles.itemSize.height, SwitcherLayout.defaultTitleHeight)
     }
 
+    func testIconModeUsesCompactTiles() {
+        let icons = SwitcherLayout.make(count: 6, in: screen, thumbWidth: 104, iconsOnly: true)
+        let thumbs = SwitcherLayout.make(count: 6, in: screen)
+        XCTAssertTrue(icons.iconsOnly)
+        XCTAssertEqual(icons.thumbSize.height, 62, "icon is 60% of the tile width")
+        XCTAssertLessThan(icons.itemSize.width, thumbs.itemSize.width)
+        XCTAssertGreaterThanOrEqual(icons.columns, thumbs.columns, "more icons fit per row")
+    }
+
     func testHitTestingMatchesTiles() {
         let layout = SwitcherLayout.make(count: 5, in: screen)
         let item = layout.itemSize

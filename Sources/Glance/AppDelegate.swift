@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        NSApp.mainMenu = makeMainMenu()
         setUpStatusItem()
         installSignalHandlers()
         settings.onChange = { [weak self] change in
@@ -69,7 +70,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // MARK: - Menu bar
+    // MARK: - Menus
+
+    /// Shown only while Settings is open (Glance is otherwise an accessory app).
+    private func makeMainMenu() -> NSMenu {
+        let main = NSMenu()
+
+        let appMenu = NSMenu()
+        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        appMenu.addItem(settingsItem)
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Hide Glance", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Quit Glance", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let appItem = NSMenuItem(title: "Glance", action: nil, keyEquivalent: "")
+        appItem.submenu = appMenu
+        main.addItem(appItem)
+
+        let windowMenu = NSMenu(title: "Window")
+        windowMenu.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let windowItem = NSMenuItem(title: "Window", action: nil, keyEquivalent: "")
+        windowItem.submenu = windowMenu
+        main.addItem(windowItem)
+        NSApp.windowsMenu = windowMenu
+        return main
+    }
 
     private func setUpStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)

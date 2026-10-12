@@ -12,7 +12,6 @@ struct WindowInfo: Identifiable, Equatable {
 }
 
 enum WindowList {
-    private static let ownPID = ProcessInfo.processInfo.processIdentifier
     private static var iconCache: [pid_t: NSImage] = [:]
 
     /// Switchable windows on every Space, as two lists: windows on the visible
@@ -49,7 +48,9 @@ enum WindowList {
 
         for info in raw {
             guard (info[kCGWindowLayer] as? Int) == 0,
-                  let pid = info[kCGWindowOwnerPID] as? pid_t, pid != ownPID,
+                  // Glance's own windows count too (Settings, while it's open and
+                  // Glance is a regular app); the switcher panel isn't layer 0.
+                  let pid = info[kCGWindowOwnerPID] as? pid_t,
                   let app = apps[pid],
                   let id = info[kCGWindowNumber] as? CGWindowID,
                   (info[kCGWindowAlpha] as? Double ?? 1) > 0.01,

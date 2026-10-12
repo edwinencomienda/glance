@@ -147,6 +147,10 @@ changes:
 - [ ] Settings: hiding the menu bar icon removes it; launching Glance again opens Settings
 - [ ] Settings: an excluded app's windows disappear; "Current Space only" hides other Spaces;
       thumbnail size, titles and panel delay apply on the next ⌘⇥
+- [ ] With Settings open: Glance appears in the Dock and in ⌘⇥ (Glance's and macOS's), and
+      choosing it focuses Settings; closing Settings removes the Dock icon
+- [ ] Settings → Show as "App icons": one icon tile per window (titles tell same-app
+      windows apart), same ordering and keys, no thumbnails captured
 
 ## Conventions
 

@@ -50,6 +50,13 @@ enum WindowFocus {
     /// Brings a specific window to front, switching Spaces if it lives on another
     /// one. Runs off the main thread so a hung app can never stall the switcher UI.
     static func focus(_ window: WindowInfo) {
+        if window.pid == ProcessInfo.processInfo.processIdentifier {
+            DispatchQueue.main.async {
+                NSApp.activate()
+                NSApp.windows.first { $0.windowNumber == Int(window.id) }?.makeKeyAndOrderFront(nil)
+            }
+            return
+        }
         queue.async {
             var psn = ProcessSerialNumber()
             if let getPSN = SkyLight.getProcessForPID, let setFront = SkyLight.setFrontProcess,

@@ -26,6 +26,12 @@ final class Settings {
         var label: String { self == .all ? "All Spaces" : "Current Space only" }
     }
 
+    enum DisplayStyle: String, CaseIterable, Identifiable {
+        case thumbnails, icons
+        var id: String { rawValue }
+        var label: String { self == .thumbnails ? "Thumbnails" : "App icons" }
+    }
+
     enum ThumbnailSize: String, CaseIterable, Identifiable {
         case small, medium, large
         var id: String { rawValue }
@@ -36,6 +42,14 @@ final class Settings {
             case .small: 176
             case .medium: 232
             case .large: 300
+            }
+        }
+        /// Tile content width in icon mode; the icon is about 60% of it.
+        var iconTileWidth: CGFloat {
+            switch self {
+            case .small: 88
+            case .medium: 104
+            case .large: 128
             }
         }
     }
@@ -59,6 +73,9 @@ final class Settings {
     var showDelayMs: Double {
         didSet { save(showDelayMs, "showDelayMs") }
     }
+    var displayStyle: DisplayStyle {
+        didSet { save(displayStyle.rawValue, "displayStyle") }
+    }
     var thumbnailSize: ThumbnailSize {
         didSet { save(thumbnailSize.rawValue, "thumbnailSize") }
     }
@@ -79,6 +96,7 @@ final class Settings {
         spacesScope = d.string(forKey: "spacesScope").flatMap(SpacesScope.init) ?? .all
         let delay = d.object(forKey: "showDelayMs") as? Double ?? 70
         showDelayMs = min(max(delay, Self.showDelayRange.lowerBound), Self.showDelayRange.upperBound)
+        displayStyle = d.string(forKey: "displayStyle").flatMap(DisplayStyle.init) ?? .thumbnails
         thumbnailSize = d.string(forKey: "thumbnailSize").flatMap(ThumbnailSize.init) ?? .medium
         showTitles = d.object(forKey: "showTitles") as? Bool ?? true
         excludedBundleIDs = d.stringArray(forKey: "excludedBundleIDs") ?? []
