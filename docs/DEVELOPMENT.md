@@ -103,6 +103,10 @@ After granting Screen Recording, quit and relaunch Glance; macOS applies it on l
   secure input enabled.
 - **Thumbnails missing / titles show the app name:** Screen Recording isn't granted, or
   the app wasn't relaunched after granting.
+- **Stuck on the current Space after choosing a window:** switching Spaces depends on
+  `AXWindowResolver` finding the window's AX element (remote-token scan for other
+  Spaces). Check that Accessibility is granted, and that
+  `_AXUIElementCreateWithRemoteToken` still resolves.
 - **Wrong window focused:** focusing relies on private SkyLight symbols resolved via
   `dlsym` (`WindowFocus.swift`). If a macOS update removes them, it falls back to
   app-level `activate()`. Check `SkyLight.setFrontProcess != nil`.
@@ -113,7 +117,7 @@ After granting Screen Recording, quit and relaunch Glance; macOS applies it on l
 ## Testing
 
 `swift test` covers the pure logic in `SwitcherLayout` (grid sizing, row balancing,
-hit-testing). Everything that touches the WindowServer, Accessibility or
+hit-testing) and `WindowMRU` (ordering across Spaces). Everything that touches the WindowServer, Accessibility or
 ScreenCaptureKit needs a manual check. Run this list before merging UI or input
 changes:
 
@@ -131,6 +135,10 @@ changes:
       right after ⌘ is released
 - [ ] Dropping a drag on a tile focuses that window; ending the drag outside the panel closes it
 - [ ] Thumbnails appear and update; placeholder icons show before the first capture
+- [ ] From a full-screen app (e.g. a full-screen video): ⌘⇥ lists windows from the
+      desktop and other Spaces, a quick tap returns to the previous window, and
+      choosing a window on another Space switches to that Space
+- [ ] No blank or tiny helper tiles (e.g. browser toolbar overlays in full screen)
 - [ ] Many windows (20+) shrink into a grid that fits the screen
 - [ ] Works over a full-screen app and on a second display
 - [ ] Quitting from the menu bar restores the native ⌘⇥

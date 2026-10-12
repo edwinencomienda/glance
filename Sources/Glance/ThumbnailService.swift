@@ -22,7 +22,7 @@ final class ThumbnailService {
         cache = cache.filter { live.contains($0.key) }
 
         task = Task { [weak self] in
-            guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true),
+            guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false),
                   !Task.isCancelled else { return }
             var byID: [CGWindowID: SCWindow] = [:]
             for w in content.windows { byID[w.windowID] = w }

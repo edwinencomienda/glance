@@ -1,9 +1,6 @@
 import AppKit
 import ApplicationServices
 
-// Maps an AX window element to its CGWindowID (HIServices, stable for many macOS releases).
-@_silgen_name("_AXUIElementGetWindow")
-private func _AXUIElementGetWindow(_ element: AXUIElement, _ id: UnsafeMutablePointer<CGWindowID>) -> AXError
 
 /// Private SkyLight entry points, resolved at runtime so a missing symbol degrades
 /// gracefully to public APIs instead of crashing at launch.
@@ -19,10 +16,16 @@ enum SkyLight {
     typealias PostEventFn = @convention(c) (UnsafeMutablePointer<ProcessSerialNumber>, UnsafeMutablePointer<UInt8>) -> CGError
     typealias SymbolicHotKeyFn = @convention(c) (Int32, Bool) -> CGError
     typealias GetPSNFn = @convention(c) (pid_t, UnsafeMutablePointer<ProcessSerialNumber>) -> OSStatus
+    typealias MainConnectionFn = @convention(c) () -> Int32
+    typealias SpacesForWindowsFn = @convention(c) (Int32, Int32, CFArray) -> Unmanaged<CFArray>?
+    typealias ManagedDisplaySpacesFn = @convention(c) (Int32) -> Unmanaged<CFArray>?
 
     static let setFrontProcess = sym("_SLPSSetFrontProcessWithOptions", as: SetFrontFn.self)
     static let postEventRecord = sym("SLPSPostEventRecordTo", as: PostEventFn.self)
     static let setSymbolicHotKeyEnabled = sym("CGSSetSymbolicHotKeyEnabled", as: SymbolicHotKeyFn.self)
+    static let mainConnection = sym("CGSMainConnectionID", as: MainConnectionFn.self)
+    static let copySpacesForWindows = sym("CGSCopySpacesForWindows", as: SpacesForWindowsFn.self)
+    static let copyManagedDisplaySpaces = sym("CGSCopyManagedDisplaySpaces", as: ManagedDisplaySpacesFn.self)
     // GetProcessForPID is deprecated (not removed); look it up dynamically to avoid the warning.
     static let getProcessForPID: GetPSNFn? = {
         guard let h = dlopen("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices", RTLD_LAZY),
@@ -44,8 +47,8 @@ enum NativeSwitcher {
 enum WindowFocus {
     private static let queue = DispatchQueue(label: "glance.focus", qos: .userInteractive)
 
-    /// Brings a specific window to front. Runs off the main thread so a hung app
-    /// can never stall the switcher UI.
+    /// Brings a specific window to front, switching Spaces if it lives on another
+    /// one. Runs off the main thread so a hung app can never stall the switcher UI.
     static func focus(_ window: WindowInfo) {
         queue.async {
             var psn = ProcessSerialNumber()
@@ -58,22 +61,22 @@ enum WindowFocus {
                     NSRunningApplication(processIdentifier: window.pid)?.activate()
                 }
             }
-            raise(window)
+            // Raising the window's AX element is what makes macOS switch to its
+            // Space; the window-server calls above don't, and neither does app
+            // activation from a background process.
+            guard let element = AXWindowResolver.element(for: window) else { return }
+            AXUIElementSetAttributeValue(element, kAXMainAttribute as CFString, kCFBooleanTrue)
+            AXUIElementPerformAction(element, kAXRaiseAction as CFString)
         }
     }
 
-    private static func raise(_ window: WindowInfo) {
-        let app = AXUIElementCreateApplication(window.pid)
-        AXUIElementSetMessagingTimeout(app, 0.25)
-        var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value) == .success,
-              let axWindows = value as? [AXUIElement] else { return }
-        for axWindow in axWindows {
-            var id: CGWindowID = 0
-            if _AXUIElementGetWindow(axWindow, &id) == .success, id == window.id {
-                AXUIElementPerformAction(axWindow, kAXRaiseAction as CFString)
-                return
-            }
+    /// Resolves AX elements for windows on other Spaces ahead of time (called when
+    /// the switcher opens, in MRU order), so choosing one doesn't wait for a token
+    /// scan. Also forgets elements of windows that no longer exist.
+    static func prefetch(_ windows: [WindowInfo], live: Set<CGWindowID>) {
+        queue.async {
+            AXWindowResolver.prune(keeping: live)
+            for window in windows { _ = AXWindowResolver.element(for: window) }
         }
     }
 

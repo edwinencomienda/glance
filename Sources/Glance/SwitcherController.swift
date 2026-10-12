@@ -42,6 +42,7 @@ final class SwitcherController {
     private let model = SwitcherModel()
     private let thumbnails = ThumbnailService()
     private let hotkeys = GlobalHotkeys()
+    private let mru = WindowMRU()
     private lazy var panel = SwitcherPanel(
         model: model,
         onHover: { [weak self] in self?.hover(at: $0) },
@@ -142,7 +143,8 @@ final class SwitcherController {
     // MARK: - Lifecycle
 
     private func open(reverse: Bool) {
-        let windows = WindowList.current()
+        let listed = WindowList.current()
+        let windows = mru.order(current: listed.current, others: listed.others)
         guard !windows.isEmpty else { return }
         isActive = true
         isDragMode = NSEvent.pressedMouseButtons & 1 != 0
@@ -155,6 +157,10 @@ final class SwitcherController {
         model.layout = layout
         model.thumbnails = thumbnails.cached(for: windows)
         model.selected = windows.count > 1 ? (reverse ? windows.count - 1 : 1) : 0
+
+        // Warm AX lookups for other-Space windows so switching to one is instant.
+        let otherIDs = Set(listed.others.map(\.id))
+        WindowFocus.prefetch(windows.filter { otherIDs.contains($0.id) }, live: Set(windows.map(\.id)))
 
         thumbnails.refresh(windows, maxSize: layout.thumbSize, scale: screen.backingScaleFactor) { [weak self] id, image in
             self?.model.thumbnails[id] = image
@@ -206,7 +212,10 @@ final class SwitcherController {
         guard isActive else { return }
         let target = model.windows.indices.contains(model.selected) ? model.windows[model.selected] : nil
         close()
-        if let target { WindowFocus.focus(target) }
+        if let target {
+            mru.touch(target.id)
+            WindowFocus.focus(target)
+        }
     }
 
     private func close() {

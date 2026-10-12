@@ -58,8 +58,9 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
 
 ## How it stays fast
 
-- **Window list**: one `CGWindowListCopyWindowInfo` call, already in
-  most-recently-used order. No per-app Accessibility IPC on open.
+- **Window list**: two `CGWindowListCopyWindowInfo` calls plus a cheap Space
+  lookup per window, about 5 ms for every window on every Space. Windows are
+  ordered most recently used first. No per-app Accessibility IPC on open.
 - **Delayed panel**: the panel appears after 70 ms, so a quick tap never draws.
 - **Thumbnails**: captured in parallel with ScreenCaptureKit, at the exact pixel
   size shown. Cached per window, so the panel opens with the last frame and
@@ -75,8 +76,8 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
 - In secure text fields (e.g. password inputs), macOS hides keystrokes from apps.
   ⌘⇥, ⌘⇧⇥ and ⇥-cycling still work, and so do ⌘+Esc / ⌘+↩ / ⌘+arrows while ⌘ is
   held. Glance never reads what you type.
-- Shows on-screen windows in the current Space. Minimized windows, hidden apps
-  and other Spaces aren't listed.
+- Lists windows on every Space, including full-screen apps. Minimized windows,
+  hidden apps (⌘H) and inactive native tabs aren't listed.
 - Uses private SkyLight APIs, as AltTab does, to disable the native ⌘⇥ and to
   focus a specific window. They're loaded at runtime, so if they're missing it
   falls back to public APIs instead of crashing. Native ⌘⇥ is restored on quit,
