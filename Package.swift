@@ -8,6 +8,11 @@ let package = Package(
         .executableTarget(
             name: "Glance",
             path: "Sources/Glance"
+        ),
+        .testTarget(
+            name: "GlanceTests",
+            dependencies: ["Glance"],
+            path: "Tests/GlanceTests"
         )
     ]
 )

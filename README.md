@@ -27,6 +27,12 @@ scripts/build-app.sh --install  # builds, copies to /Applications, launches
 
 Requires macOS 14+ and Xcode / Swift 5.10+.
 
+## Development
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the dev loop, debugging, testing
+and releasing, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it works.
+Run the tests with `swift test`.
+
 ## Permissions
 
 - **Accessibility**: needed to intercept ⌘⇥ and raise the chosen window.
@@ -53,6 +59,9 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
 
 ## Notes & limitations
 
+- In secure text fields (e.g. password inputs), macOS hides keystrokes from apps.
+  ⌘⇥, ⌘⇧⇥ and ⇥-cycling still work, and so do ⌘+Esc / ⌘+↩ / ⌘+arrows while ⌘ is
+  held. Glance never reads what you type.
 - Shows on-screen windows in the current Space. Minimized windows, hidden apps
   and other Spaces aren't listed.
 - Uses private SkyLight APIs, as AltTab does, to disable the native ⌘⇥ and to
