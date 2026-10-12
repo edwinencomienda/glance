@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5.10-F05138?logo=swift&logoColor=white" alt="Swift 5.10">
   <img src="https://img.shields.io/badge/native-AppKit%20%2B%20SwiftUI-1258E8" alt="Native AppKit + SwiftUI">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
 </p>
 
 <p align="center">
@@ -105,3 +106,7 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
   falls back to public APIs instead of crashing. Native ⌘⇥ is restored on quit,
   including on SIGTERM/SIGINT. After a hard crash (SIGKILL), relaunch Glance and
   quit it, or log out, to get native ⌘⇥ back.
+
+## License
+
+[MIT](LICENSE) © Edwin Encomienda
