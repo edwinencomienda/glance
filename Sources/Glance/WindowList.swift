@@ -19,7 +19,8 @@ enum WindowList {
     /// Spaces (front-to-back z-order) and windows on other Spaces, including
     /// full-screen ones. Two CGWindowList calls plus a cheap Space lookup per
     /// candidate; no per-app Accessibility IPC.
-    static func current() -> (current: [WindowInfo], others: [WindowInfo]) {
+    static func current(includeOtherSpaces: Bool = true,
+                        excluding excluded: Set<String> = []) -> (current: [WindowInfo], others: [WindowInfo]) {
         guard let raw = CGWindowListCopyWindowInfo(
             [.optionAll, .excludeDesktopElements], kCGNullWindowID
         ) as? [[CFString: Any]] else { return ([], []) }
@@ -39,6 +40,7 @@ enum WindowList {
         // One lookup table instead of an NSRunningApplication per window owner.
         var apps: [pid_t: NSRunningApplication] = [:]
         for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
+            if let bundleID = app.bundleIdentifier, excluded.contains(bundleID) { continue }
             apps[app.processIdentifier] = app
         }
         var current: [WindowInfo] = [], others: [WindowInfo] = []
@@ -62,6 +64,7 @@ enum WindowList {
                 // No Space: helper, minimized or inactive-tab window.
                 guard !spaces.isEmpty else { continue }
                 isCurrent = !spaceLayout.visible.isDisjoint(with: spaces)
+                if !isCurrent && !includeOtherSpaces { continue }
                 if let fullScreen = spaces.first(where: spaceLayout.fullScreen.contains) {
                     fullScreenSpaceOf[id] = fullScreen
                 }

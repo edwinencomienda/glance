@@ -27,7 +27,9 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
 | File | Responsibility |
 | --- | --- |
 | `main.swift` | Boots `NSApplication` with `AppDelegate`. |
-| `AppDelegate.swift` | Menu bar item, permission prompts and polling, launch at login, signal handlers that restore native ⌘⇥. |
+| `AppDelegate.swift` | Menu bar item (Settings… / Quit, plus a warning item if a permission is missing), permission prompts and polling, reopen → Settings, applying eager settings changes, signal handlers that restore native ⌘⇥. |
+| `Settings.swift` | `@Observable` preferences persisted in `UserDefaults`. Defaults reproduce the original behaviour. Most values are read when needed (on `open()`); `onChange` applies the shortcut and the menu bar icon immediately. |
+| `SettingsView.swift` | Branded Settings window plus `SettingsWindowController`. A header in the app icon's blue, with its tilted window cards and `GlanceMascot` (the logo as a live character: eyes follow the pointer and it blinks, but not with Reduce Motion), then cards built from small components (`ChoiceTile`, `Keycap`, `AppChip`, …) in the `Brand` colours. The window is created on demand and released on close, so the 1 s permission/login-item refresh and the blink loop only run while it's open. |
 | `GlobalHotkeys.swift` | `RegisterEventHotKey` wrapper. ⌘⇥ / ⌘⇧⇥ are always registered; ⌘+Esc/↩/arrows only while the panel is visible. These still fire under Secure Event Input. |
 | `MenuBarIcon.swift` | Draws the logo (`Resources/Logo/glance-logo.svg`) as a template `NSImage` for the status item. Paths mirror the SVG's coordinates. |
 | `HotkeyTap.swift` | Session event tap for keyDown/keyUp/flagsChanged. Re-enables itself if macOS disables it on timeout. The handler returns `true` to swallow an event. |
@@ -94,6 +96,11 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
   `NSDraggingDestination` callbacks, since mouse-moved events aren't delivered
   during a drag. Drag end is detected by the same open-only input poll that
   watches ⌘.
+- **Settings without overhead.** Values are read at the moment they're used, so
+  there are no observers on the hot path. The only eager changes are the
+  shortcut (re-registers the hotkeys and toggles the native ⌘⇥: disabled for
+  ⌘⇥, restored for ⌥⇥) and the menu bar icon visibility. Hiding the icon leaves
+  `applicationShouldHandleReopen` as the way back into Settings.
 - **AX is used only for raising,** after the panel has closed, on a background queue
   with a 250 ms messaging timeout.
 - **The panel never becomes key.** Keyboard input comes from the event tap, so the
@@ -112,5 +119,5 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
 - Minimized windows, hidden apps (⌘H) and inactive native tabs aren't listed.
 - Recency within an app on another Space is only as fresh as its last app
   activation (we don't run per-app AX observers, to keep idle cost at zero).
-- Only ⌘⇥ is configurable in code (key codes live in `SwitcherController.Key`); there's no settings UI.
+- The shortcut is limited to ⌘⇥ or ⌥⇥; there's no arbitrary shortcut recorder.
 - Not notarized.

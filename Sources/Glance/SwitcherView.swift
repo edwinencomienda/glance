@@ -16,6 +16,7 @@ struct SwitcherView: View {
                                 window: window,
                                 image: model.thumbnails[window.id],
                                 thumbSize: layout.thumbSize,
+                                titleHeight: layout.titleHeight,
                                 selected: index == model.selected
                             )
                             .equatable()
@@ -33,10 +34,12 @@ struct TileView: View, Equatable {
     let window: WindowInfo
     let image: CGImage?
     let thumbSize: CGSize
+    let titleHeight: CGFloat
     let selected: Bool
 
     static func == (a: TileView, b: TileView) -> Bool {
-        a.window == b.window && a.image === b.image && a.thumbSize == b.thumbSize && a.selected == b.selected
+        a.window == b.window && a.image === b.image && a.thumbSize == b.thumbSize
+            && a.titleHeight == b.titleHeight && a.selected == b.selected
     }
 
     private var iconSize: CGFloat { max(22, min(32, thumbSize.width * 0.14)) }
@@ -55,12 +58,14 @@ struct TileView: View, Equatable {
                     }
                 }
 
-            Text(window.title)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(selected ? 0.95 : 0.7))
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .frame(width: thumbSize.width, height: SwitcherLayout.titleHeight, alignment: .bottom)
+            if titleHeight > 0 {
+                Text(window.title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(selected ? 0.95 : 0.7))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(width: thumbSize.width, height: titleHeight, alignment: .bottom)
+            }
         }
         .padding(SwitcherLayout.tileInset)
         .background {

@@ -1,9 +1,10 @@
 import AppKit
-import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let switcher = SwitcherController()
+    private let settings = Settings.shared
+    private let settingsWindow = SettingsWindowController()
     private var statusItem: NSStatusItem?
     private var started = false
     private var permissionTimer: Timer?
@@ -13,6 +14,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.setActivationPolicy(.accessory)
         setUpStatusItem()
         installSignalHandlers()
+        settings.onChange = { [weak self] change in
+            guard let self else { return }
+            switch change {
+            case .shortcut: if self.started { self.switcher.applyShortcut() }
+            case .menuBarIcon: self.statusItem?.isVisible = self.settings.showMenuBarIcon
+            }
+        }
 
         if !CGPreflightScreenCaptureAccess() { CGRequestScreenCaptureAccess() }
 
@@ -20,6 +28,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if AXIsProcessTrustedWithOptions(options) {
             startSwitcher()
         } else {
+            // First run: show Settings so the Permissions section explains what's needed.
+            settingsWindow.show()
             // Wait for the user to grant Accessibility, then start without a relaunch.
             permissionTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated {
@@ -32,6 +42,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         switcher.stop()
+    }
+
+    /// Launching Glance again while it runs opens Settings. This is the way back
+    /// in when the menu bar icon is hidden.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        settingsWindow.show()
+        return false
     }
 
     private func startSwitcher() {
@@ -60,50 +77,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu
+        item.isVisible = settings.showMenuBarIcon
         statusItem = item
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
-        menu.addItem(withTitle: "Glance — ⌘⇥ to switch windows", action: nil, keyEquivalent: "").isEnabled = false
+        menu.addItem(withTitle: "Glance — \(settings.shortcut.symbol) to switch windows", action: nil, keyEquivalent: "")
+            .isEnabled = false
+        if !AXIsProcessTrusted() || !CGPreflightScreenCaptureAccess() {
+            let warning = NSMenuItem(title: "Permissions Needed…", action: #selector(showSettings), keyEquivalent: "")
+            warning.target = self
+            warning.image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: nil)
+            menu.addItem(warning)
+        }
         menu.addItem(.separator())
-
-        addPermission(to: menu, title: "Accessibility", granted: AXIsProcessTrusted(),
-                      pane: "Privacy_Accessibility")
-        addPermission(to: menu, title: "Screen Recording", granted: CGPreflightScreenCaptureAccess(),
-                      pane: "Privacy_ScreenCapture")
-        menu.addItem(.separator())
-
-        let login = NSMenuItem(title: "Launch at Login", action: #selector(toggleLogin), keyEquivalent: "")
-        login.target = self
-        login.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        menu.addItem(login)
+        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Glance", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     }
 
-    private func addPermission(to menu: NSMenu, title: String, granted: Bool, pane: String) {
-        let item = NSMenuItem(title: "\(title): \(granted ? "Granted" : "Grant…")",
-                              action: granted ? nil : #selector(openSettings(_:)), keyEquivalent: "")
-        item.target = self
-        item.representedObject = pane
-        item.image = NSImage(systemSymbolName: granted ? "checkmark.circle.fill" : "exclamationmark.circle",
-                             accessibilityDescription: nil)
-        menu.addItem(item)
-    }
-
-    @objc private func openSettings(_ sender: NSMenuItem) {
-        guard let pane = sender.representedObject as? String,
-              let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)") else { return }
-        NSWorkspace.shared.open(url)
-    }
-
-    @objc private func toggleLogin() {
-        let service = SMAppService.mainApp
-        do {
-            if service.status == .enabled { try service.unregister() } else { try service.register() }
-        } catch {
-            NSLog("Glance: launch-at-login change failed: \(error.localizedDescription)")
-        }
+    @objc private func showSettings() {
+        settingsWindow.show()
     }
 }

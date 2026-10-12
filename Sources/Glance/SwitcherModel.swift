@@ -15,9 +15,11 @@ struct SwitcherLayout: Equatable {
     static let padding: CGFloat = 14
     static let spacing: CGFloat = 6
     static let tileInset: CGFloat = 10
-    static let titleHeight: CGFloat = 26
+    static let defaultTitleHeight: CGFloat = 26
 
     var thumbSize: CGSize
+    /// Height of the title row under each thumbnail; 0 when titles are hidden.
+    var titleHeight: CGFloat = defaultTitleHeight
     var columns: Int
     var rows: Int
     var count: Int
@@ -26,7 +28,7 @@ struct SwitcherLayout: Equatable {
 
     var itemSize: CGSize {
         CGSize(width: thumbSize.width + Self.tileInset * 2,
-               height: thumbSize.height + Self.tileInset * 2 + Self.titleHeight)
+               height: thumbSize.height + Self.tileInset * 2 + titleHeight)
     }
 
     var panelSize: CGSize {
@@ -40,12 +42,14 @@ struct SwitcherLayout: Equatable {
     func itemsInRow(_ row: Int) -> Int { min(columns, count - row * columns) }
 
     /// Fits `count` tiles into `bounds`, shrinking thumbnails only when needed.
-    static func make(count: Int, in bounds: CGSize) -> SwitcherLayout {
+    static func make(count: Int, in bounds: CGSize,
+                     thumbWidth: CGFloat = 232, showTitles: Bool = true) -> SwitcherLayout {
         let maxW = bounds.width * 0.9, maxH = bounds.height * 0.85
-        var thumbW: CGFloat = 232
+        var thumbW = thumbWidth
         while true {
             let thumb = CGSize(width: thumbW, height: (thumbW * 0.625).rounded())
-            var layout = SwitcherLayout(thumbSize: thumb, columns: 1, rows: 1, count: count)
+            var layout = SwitcherLayout(thumbSize: thumb, titleHeight: showTitles ? defaultTitleHeight : 0,
+                                        columns: 1, rows: 1, count: count)
             let item = layout.itemSize
             let fitCols = Int((maxW - padding * 2 + spacing) / (item.width + spacing))
             let cols = max(1, min(count, fitCols))

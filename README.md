@@ -28,8 +28,23 @@
 | Mouse | Hover to select, click to switch |
 | Drag + `⌘⇥` | While dragging a file, text or image: the panel stays open; release `⌘`, then hover the drag over a window for a moment (or drop on it) to bring that window forward, then drop into it. Nothing switches while `⌘` is still held |
 
-Glance lives in the menu bar (no Dock icon). The menu shows permission status,
-**Launch at Login** and **Quit**.
+Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,) and
+**Quit**, plus a warning item if a permission is missing.
+
+## Settings
+
+| Section | Options |
+| --- | --- |
+| General | Launch at login · Show icon in menu bar |
+| Shortcut | `⌘⇥` (replaces the macOS app switcher) or `⌥⇥` (keeps it) |
+| Switcher | Show windows from all Spaces or the current Space only · Panel delay (0–300 ms; a quick tap within it switches without showing the panel) |
+| Appearance | Thumbnail size (small / medium / large) · Show window titles |
+| Excluded Apps | Apps whose windows never appear in the switcher |
+| Permissions | Accessibility and Screen Recording status, with shortcuts to fix them |
+
+Changes apply immediately. If you hide the menu bar icon, open Glance again (from
+Spotlight, Raycast or Finder) to bring up Settings. Settings also opens on first
+launch, until Accessibility is granted.
 
 ## Build & install
 

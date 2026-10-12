@@ -3,8 +3,6 @@ import Carbon.HIToolbox
 
 @MainActor
 final class SwitcherController {
-    /// A quick ⌘⇥ tap switches without ever drawing the panel (like Windows).
-    private static let showDelay: TimeInterval = 0.07
     /// How long a dragged item must hover a tile before that window comes forward.
     private static let springLoadDelay: TimeInterval = 0.45
 
@@ -24,20 +22,25 @@ final class SwitcherController {
     /// is ever reported by both.
     private enum Source { case tap, hotkey }
 
-    /// Always registered: the trigger.
+    /// Always registered: the trigger. Combined with the shortcut's modifier.
     private static let triggerHotkeys: [(Action, Int, Int)] = [
-        (.forward, kVK_Tab, cmdKey),
-        (.backward, kVK_Tab, cmdKey | shiftKey),
+        (.forward, kVK_Tab, 0),
+        (.backward, kVK_Tab, shiftKey),
     ]
-    /// Registered only while the switcher is open (⌘ is held, so ⌘ is part of the combo).
+    /// Registered only while the switcher is open (the modifier is held, so it's
+    /// part of the combo).
     private static let sessionHotkeys: [(Action, Int, Int)] = [
-        (.cancel, kVK_Escape, cmdKey),
-        (.commit, kVK_Return, cmdKey),
-        (.left, kVK_LeftArrow, cmdKey),
-        (.right, kVK_RightArrow, cmdKey),
-        (.up, kVK_UpArrow, cmdKey),
-        (.down, kVK_DownArrow, cmdKey),
+        (.cancel, kVK_Escape, 0),
+        (.commit, kVK_Return, 0),
+        (.left, kVK_LeftArrow, 0),
+        (.right, kVK_RightArrow, 0),
+        (.up, kVK_UpArrow, 0),
+        (.down, kVK_DownArrow, 0),
     ]
+
+    private let settings = Settings.shared
+    /// The shortcut currently registered; changes go through `applyShortcut()`.
+    private var shortcut = Settings.shared.shortcut
 
     private let model = SwitcherModel()
     private let thumbnails = ThumbnailService()
@@ -74,11 +77,20 @@ final class SwitcherController {
                 if let action = Action(rawValue: id) { self?.perform(action, from: .hotkey) }
             }
         }
-        for (action, key, mods) in Self.triggerHotkeys {
-            hotkeys.register(id: action.rawValue, keyCode: key, modifiers: mods)
-        }
-        NativeSwitcher.setEnabled(false)
+        applyShortcut()
         return true
+    }
+
+    /// Registers the trigger for the chosen shortcut. ⌘⇥ replaces the native
+    /// switcher, so that's disabled; ⌥⇥ leaves the native one alone.
+    func applyShortcut() {
+        close()
+        for (action, _, _) in Self.triggerHotkeys { hotkeys.unregister(id: action.rawValue) }
+        shortcut = settings.shortcut
+        for (action, key, mods) in Self.triggerHotkeys {
+            hotkeys.register(id: action.rawValue, keyCode: key, modifiers: mods | shortcut.carbonModifier)
+        }
+        NativeSwitcher.setEnabled(shortcut != .commandTab)
     }
 
     func stop() {
@@ -91,13 +103,13 @@ final class SwitcherController {
         let flags = event.flags
         switch type {
         case .flagsChanged:
-            if isActive && !isDragMode && !flags.contains(.maskCommand) { commit() }
+            if isActive && !isDragMode && !flags.contains(shortcut.eventFlag) { commit() }
             return false
 
         case .keyDown:
             let key = event.getIntegerValueField(.keyboardEventKeycode)
-            // In drag mode ⌘ may already be released, so a bare ⇥ keeps cycling.
-            if key == Key.tab && (flags.contains(.maskCommand) || isActive) {
+            // In drag mode the modifier may already be released, so a bare ⇥ keeps cycling.
+            if key == Key.tab && (flags.contains(shortcut.eventFlag) || isActive) {
                 perform(flags.contains(.maskShift) ? .backward : .forward, from: .tap)
                 return true
             }
@@ -143,7 +155,8 @@ final class SwitcherController {
     // MARK: - Lifecycle
 
     private func open(reverse: Bool) {
-        let listed = WindowList.current()
+        let listed = WindowList.current(includeOtherSpaces: settings.spacesScope == .all,
+                                        excluding: Set(settings.excludedBundleIDs))
         let windows = mru.order(current: listed.current, others: listed.others)
         guard !windows.isEmpty else { return }
         isActive = true
@@ -151,7 +164,9 @@ final class SwitcherController {
 
         let screen = Self.screenUnderMouse()
         self.screen = screen
-        let layout = SwitcherLayout.make(count: windows.count, in: screen.visibleFrame.size)
+        let layout = SwitcherLayout.make(count: windows.count, in: screen.visibleFrame.size,
+                                         thumbWidth: settings.thumbnailSize.width,
+                                         showTitles: settings.showTitles)
 
         model.windows = windows
         model.layout = layout
@@ -166,7 +181,7 @@ final class SwitcherController {
             self?.model.thumbnails[id] = image
         }
 
-        showTimer = Timer.scheduledTimer(withTimeInterval: Self.showDelay, repeats: false) { [weak self] _ in
+        showTimer = Timer.scheduledTimer(withTimeInterval: settings.showDelayMs / 1000, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated { self?.present() }
         }
 
@@ -181,7 +196,7 @@ final class SwitcherController {
 
     private func pollInputState() {
         guard isActive else { return }
-        let commandHeld = CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand)
+        let commandHeld = CGEventSource.flagsState(.combinedSessionState).contains(shortcut.eventFlag)
         if isDragMode {
             if NSEvent.pressedMouseButtons & 1 == 0 {
                 dragEnded()
@@ -198,7 +213,7 @@ final class SwitcherController {
         panel.show(size: model.layout.panelSize, on: screen)
         // Registered here rather than in open() so a quick tap never pays for them.
         for (action, key, mods) in Self.sessionHotkeys {
-            hotkeys.register(id: action.rawValue, keyCode: key, modifiers: mods)
+            hotkeys.register(id: action.rawValue, keyCode: key, modifiers: mods | shortcut.carbonModifier)
         }
     }
 

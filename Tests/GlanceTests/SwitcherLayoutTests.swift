@@ -30,6 +30,14 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertGreaterThan(layout.itemsInRow(layout.rows - 1), 1)
     }
 
+    func testSettingsAffectTileSize() {
+        let withTitles = SwitcherLayout.make(count: 3, in: screen, thumbWidth: 176, showTitles: true)
+        let noTitles = SwitcherLayout.make(count: 3, in: screen, thumbWidth: 176, showTitles: false)
+        XCTAssertEqual(withTitles.thumbSize.width, 176)
+        XCTAssertEqual(noTitles.titleHeight, 0)
+        XCTAssertEqual(withTitles.itemSize.height - noTitles.itemSize.height, SwitcherLayout.defaultTitleHeight)
+    }
+
     func testHitTestingMatchesTiles() {
         let layout = SwitcherLayout.make(count: 5, in: screen)
         let item = layout.itemSize

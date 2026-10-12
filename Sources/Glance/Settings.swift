@@ -1,0 +1,90 @@
+import AppKit
+import Carbon.HIToolbox
+import Observation
+
+/// User preferences, persisted in UserDefaults. Defaults reproduce Glance's
+/// original behaviour, so a fresh install works the same as before settings
+/// existed. Read values at the moment they're needed; `onChange` covers the few
+/// settings that must be applied eagerly (shortcut, menu bar icon).
+@MainActor
+@Observable
+final class Settings {
+    static let shared = Settings()
+
+    enum Shortcut: String, CaseIterable, Identifiable {
+        case commandTab, optionTab
+        var id: String { rawValue }
+        var label: String { self == .commandTab ? "⌘ Command + Tab" : "⌥ Option + Tab" }
+        var symbol: String { self == .commandTab ? "⌘⇥" : "⌥⇥" }
+        var eventFlag: CGEventFlags { self == .commandTab ? .maskCommand : .maskAlternate }
+        var carbonModifier: Int { self == .commandTab ? cmdKey : optionKey }
+    }
+
+    enum SpacesScope: String, CaseIterable, Identifiable {
+        case all, current
+        var id: String { rawValue }
+        var label: String { self == .all ? "All Spaces" : "Current Space only" }
+    }
+
+    enum ThumbnailSize: String, CaseIterable, Identifiable {
+        case small, medium, large
+        var id: String { rawValue }
+        var label: String { rawValue.capitalized }
+        /// Thumbnail width before the layout shrinks it to fit many windows.
+        var width: CGFloat {
+            switch self {
+            case .small: 176
+            case .medium: 232
+            case .large: 300
+            }
+        }
+    }
+
+    enum Change { case shortcut, menuBarIcon }
+
+    @ObservationIgnored var onChange: ((Change) -> Void)?
+    @ObservationIgnored private let defaults = UserDefaults.standard
+
+    var shortcut: Shortcut {
+        didSet { save(shortcut.rawValue, "shortcut"); onChange?(.shortcut) }
+    }
+    var showMenuBarIcon: Bool {
+        didSet { save(showMenuBarIcon, "showMenuBarIcon"); onChange?(.menuBarIcon) }
+    }
+    var spacesScope: SpacesScope {
+        didSet { save(spacesScope.rawValue, "spacesScope") }
+    }
+    /// Delay before the panel appears, in milliseconds. A quick tap within this
+    /// window switches without drawing anything.
+    var showDelayMs: Double {
+        didSet { save(showDelayMs, "showDelayMs") }
+    }
+    var thumbnailSize: ThumbnailSize {
+        didSet { save(thumbnailSize.rawValue, "thumbnailSize") }
+    }
+    var showTitles: Bool {
+        didSet { save(showTitles, "showTitles") }
+    }
+    /// Bundle identifiers of apps that never appear in the switcher.
+    var excludedBundleIDs: [String] {
+        didSet { save(excludedBundleIDs, "excludedBundleIDs") }
+    }
+
+    static let showDelayRange: ClosedRange<Double> = 0...300
+
+    private init() {
+        let d = UserDefaults.standard
+        shortcut = d.string(forKey: "shortcut").flatMap(Shortcut.init) ?? .commandTab
+        showMenuBarIcon = d.object(forKey: "showMenuBarIcon") as? Bool ?? true
+        spacesScope = d.string(forKey: "spacesScope").flatMap(SpacesScope.init) ?? .all
+        let delay = d.object(forKey: "showDelayMs") as? Double ?? 70
+        showDelayMs = min(max(delay, Self.showDelayRange.lowerBound), Self.showDelayRange.upperBound)
+        thumbnailSize = d.string(forKey: "thumbnailSize").flatMap(ThumbnailSize.init) ?? .medium
+        showTitles = d.object(forKey: "showTitles") as? Bool ?? true
+        excludedBundleIDs = d.stringArray(forKey: "excludedBundleIDs") ?? []
+    }
+
+    private func save(_ value: Any, _ key: String) {
+        defaults.set(value, forKey: key)
+    }
+}

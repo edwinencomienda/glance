@@ -142,6 +142,11 @@ changes:
 - [ ] Many windows (20+) shrink into a grid that fits the screen
 - [ ] Works over a full-screen app and on a second display
 - [ ] Quitting from the menu bar restores the native ⌘⇥
+- [ ] Settings: switching to ⌥⇥ works immediately and gives ⌘⇥ back to macOS;
+      switching back to ⌘⇥ takes it over again
+- [ ] Settings: hiding the menu bar icon removes it; launching Glance again opens Settings
+- [ ] Settings: an excluded app's windows disappear; "Current Space only" hides other Spaces;
+      thumbnail size, titles and panel delay apply on the next ⌘⇥
 
 ## Conventions
 
@@ -149,6 +154,12 @@ changes:
   main thread. Do slow work (AX, capture) off-main or asynchronously.
 - **No polling at idle.** Work happens only in response to events. Short-lived
   checks are fine only while the switcher is open (e.g. the ⌘-release check).
+- **New settings** go in `Settings.swift`. Their default must keep the current
+  behaviour, and they're read at use time (not observed) unless they truly need
+  to apply eagerly. Document them in the README's Settings table.
+- **UI on non-Retina displays:** don't rely on thin or fractional strokes (e.g. a
+  1.5 pt selection outline). They smear at 1×. Prefer filled shapes, as
+  `ChoiceTile` does, and whole-point sizes. Check screenshots on a 1× display.
 - **Never bypass Secure Event Input.** Handle it only through supported APIs
   (registered hotkeys, modifier-state reads). Never read or log keystrokes.
 - **Private APIs** go through `dlsym` in `WindowFocus.swift` with a public fallback.
