@@ -1,7 +1,19 @@
-# Glance
+<p align="center">
+  <img src="Resources/Logo/glance-app-icon.svg" width="160" height="160" alt="Glance app icon">
+</p>
 
-A tiny, fast, Windows-style window switcher for macOS. Press **⌘⇥** to see every
-window, with live thumbnails, not just every app.
+<h1 align="center">Glance</h1>
+
+<p align="center">
+  A tiny, fast, Windows-style window switcher for macOS.<br>
+  Press <b>⌘⇥</b> to see every window, with live thumbnails, not just every app.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Swift-5.10-F05138?logo=swift&logoColor=white" alt="Swift 5.10">
+  <img src="https://img.shields.io/badge/native-AppKit%20%2B%20SwiftUI-1258E8" alt="Native AppKit + SwiftUI">
+</p>
 
 ## Usage
 
@@ -26,7 +38,7 @@ scripts/build-app.sh            # builds build/Glance.app
 scripts/build-app.sh --install  # builds, copies to /Applications, launches
 ```
 
-Requires macOS 14+ and Xcode / Swift 5.10+.
+Requires macOS 14+ to run, and Xcode 26+ to build.
 
 ## Development
 

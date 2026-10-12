@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <title>Glance — Attentive Horizontal</title>
+  <desc>Flat black head with two attentive capsule eyes and a straight horizontal line. Transparent background.</desc>
+  <g transform="translate(0 63)" fill="#000000">
+    <path d="M116 256 A140 140 0 0 1 396 256 L368 256 A112 112 0 0 0 144 256 Z"/>
+    <rect x="198" y="184" width="28" height="52" rx="14"/>
+    <rect x="286" y="184" width="28" height="52" rx="14"/>
+    <rect x="64" y="242" width="384" height="28" rx="14"/>
+  </g>
+</svg>

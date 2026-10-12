@@ -3,7 +3,7 @@
 ## Requirements
 
 - macOS 14+ (developed on macOS 26)
-- Xcode 15.3+ (Swift 5.10+). No Xcode project; it's a plain Swift package.
+- Xcode 26+ (for the Icon Composer app icon; Swift 5.10+). No Xcode project; it's a plain Swift package.
 - Optional: an `Apple Development` signing identity, so permission grants survive rebuilds
 
 ## Project layout
@@ -13,6 +13,10 @@ Package.swift             SwiftPM manifest (app target + test target)
 Sources/Glance/           App source (see docs/ARCHITECTURE.md)
 Tests/GlanceTests/        Unit tests (pure logic: layout, hit-testing)
 Resources/Info.plist      Bundle metadata (LSUIElement, bundle id, usage strings)
+Resources/AppIcon.icon/   App icon (Icon Composer bundle, compiled by build-app.sh)
+Resources/Logo/           Source artwork (SVG): glance-logo.svg (the mark; the menu
+                          bar icon in MenuBarIcon.swift mirrors it, so update both
+                          together) and glance-app-icon.svg (flat icon artwork)
 scripts/build-app.sh      Builds, bundles and signs Glance.app
 docs/                     Developer documentation
 ```
@@ -33,6 +37,29 @@ permissions to. `build-app.sh` quits the running copy before replacing it.
 `swift build && .build/debug/Glance` works, but macOS attributes permissions to the
 **parent process** (Terminal, iTerm, Ghostty, …), not to Glance. That terminal app
 then needs Accessibility and Screen Recording. Prefer the bundled app.
+
+## Icons
+
+- **App icon:** `Resources/AppIcon.icon` is an Icon Composer bundle (`icon.json`
+  plus SVG layers in `Assets/`). It has a solid blue fill, a "Windows" layer
+  (the tilted cards) and a "Logo" layer. `build-app.sh` compiles it with
+  `actool` into `Assets.car`, used by macOS 26+, plus an `AppIcon.icns`
+  fallback for macOS 14–15. Building therefore needs Xcode 26 or newer.
+  - Edit it in **Icon Composer** (Xcode → Open Developer Tool), or edit the SVGs
+    and `icon.json` by hand.
+  - Layers are full-bleed: the whole 1024 px canvas is the tile, and the system
+    applies the rounded mask, shadows and Liquid Glass effects. The layer SVGs use
+    `viewBox="100 100 824 824"` so they keep the coordinates of the flat
+    artwork, `Resources/Logo/glance-app-icon.svg`.
+  - Don't ship a plain `.icns` on its own. macOS 26 shrinks legacy icons into a
+    light-grey "jail" tile, so they look smaller than other apps' icons in Finder,
+    Raycast and Spotlight.
+- **Menu bar icon:** drawn in code (`MenuBarIcon.swift`) as a template image from
+  the same coordinates as `glance-logo.svg`. If the mark changes, update the
+  paths there and `Resources/AppIcon.icon/Assets/logo.svg`.
+- Finder and the Dock cache icons. If an old icon sticks after `--install`, run
+  `killall Finder` (or `killall Dock`). Your terminal may not be allowed to `touch`
+  files in /Applications, because of macOS's App Management protection.
 
 ## Permissions
 

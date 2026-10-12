@@ -28,6 +28,7 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
 | `main.swift` | Boots `NSApplication` with `AppDelegate`. |
 | `AppDelegate.swift` | Menu bar item, permission prompts and polling, launch at login, signal handlers that restore native ⌘⇥. |
 | `GlobalHotkeys.swift` | `RegisterEventHotKey` wrapper. ⌘⇥ / ⌘⇧⇥ are always registered; ⌘+Esc/↩/arrows only while the panel is visible. These still fire under Secure Event Input. |
+| `MenuBarIcon.swift` | Draws the logo (`Resources/Logo/glance-logo.svg`) as a template `NSImage` for the status item. Paths mirror the SVG's coordinates. |
 | `HotkeyTap.swift` | Session event tap for keyDown/keyUp/flagsChanged. Re-enables itself if macOS disables it on timeout. The handler returns `true` to swallow an event. |
 | `SwitcherController.swift` | The state machine (inactive ↔ active) and key bindings. Owns the model, panel and thumbnail service. |
 | `WindowList.swift` | Lists layer-0, on-screen windows of regular apps, front to back. Caches app icons per pid. |
