@@ -18,6 +18,8 @@ Resources/Logo/           Source artwork (SVG): glance-logo.svg (the mark; the m
                           bar icon in MenuBarIcon.swift mirrors it, so update both
                           together) and glance-app-icon.svg (flat icon artwork)
 scripts/build-app.sh      Builds, bundles and signs Glance.app
+scripts/release.sh        Checks, tags and publishes a source release (see RELEASING.md)
+CHANGELOG.md              User-facing changes per version
 docs/                     Developer documentation
 ```
 
@@ -179,11 +181,7 @@ changes:
 
 ## Releasing
 
-1. Bump `CFBundleShortVersionString` / `CFBundleVersion` in `Resources/Info.plist`.
-2. `swift test && scripts/build-app.sh`
-3. Run the manual checklist above against `build/Glance.app`.
-4. Commit and tag `vX.Y.Z`.
-
-Builds are universal (arm64 + x86_64) and signed with the hardened runtime. They
-aren't notarized, which is fine for personal use. Distributing to others needs a
-Developer ID identity plus `xcrun notarytool`.
+See [RELEASING.md](RELEASING.md): Semantic Versioning, `CHANGELOG.md`, and
+`scripts/release.sh` for tagging and the GitHub release. Releases are source
+only. Builds are universal (arm64 + x86_64) and signed with the builder's own
+identity and the hardened runtime.

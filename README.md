@@ -65,8 +65,9 @@ Requires macOS 14+ to run, and Xcode 26+ to build.
 
 ## Development
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the dev loop, debugging, testing
-and releasing, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it works.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the dev loop, debugging and
+testing, [docs/RELEASING.md](docs/RELEASING.md) for versioning and releases,
+[CHANGELOG.md](CHANGELOG.md) for what changed, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it works.
 Run the tests with `swift test`.
 
 ## Permissions

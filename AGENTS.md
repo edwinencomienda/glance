@@ -21,6 +21,9 @@ package with no Xcode project. Read `docs/ARCHITECTURE.md` before changing behav
 - Keep geometry pure and tested in `SwitcherLayout`. Add tests for any logic that
   can run without the WindowServer.
 - After UI or input changes, run the manual checklist in `docs/DEVELOPMENT.md`.
+- **Changelog:** every user-facing change adds a line under `## [Unreleased]` in
+  `CHANGELOG.md` (Added / Changed / Fixed / Removed). Releases follow
+  `docs/RELEASING.md`.
 - **Keep docs in sync in the same change:**
   - user-facing behaviour, keys, permissions → `README.md`
   - build, debug, test or release workflow → `docs/DEVELOPMENT.md`
