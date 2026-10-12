@@ -7,6 +7,8 @@ for how releases are made.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-12
+
 ### Fixed
 
 - Browser popups, such as Microsoft Edge's address-bar suggestions, no longer show
@@ -33,5 +35,6 @@ The first release.
 - Menu bar icon and app icon (Icon Composer, full-size on macOS 26).
 - Clean panel that follows light and dark mode, with a soft shadow.
 
-[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/edwinencomienda/glance/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/edwinencomienda/glance/releases/tag/v1.0.0
