@@ -35,7 +35,7 @@ permissions to. `build-app.sh` quits the running copy before replacing it.
 ### Running the raw binary
 
 `swift build && .build/debug/Glance` works, but macOS attributes permissions to the
-**parent process** (Terminal, iTerm, Ghostty, …), not to Glance. That terminal app
+**parent process** (your terminal app), not to Glance. That terminal app
 then needs Accessibility and Screen Recording. Prefer the bundled app.
 
 ## Icons
@@ -52,8 +52,8 @@ then needs Accessibility and Screen Recording. Prefer the bundled app.
     `viewBox="100 100 824 824"` so they keep the coordinates of the flat
     artwork, `Resources/Logo/glance-app-icon.svg`.
   - Don't ship a plain `.icns` on its own. macOS 26 shrinks legacy icons into a
-    light-grey "jail" tile, so they look smaller than other apps' icons in Finder,
-    Raycast and Spotlight.
+    light-grey "jail" tile, so they look smaller than other apps' icons in Finder
+    and Spotlight.
 - **Menu bar icon:** drawn in code (`MenuBarIcon.swift`) as a template image from
   the same coordinates as `glance-logo.svg`. If the mark changes, update the
   paths there and `Resources/AppIcon.icon/Assets/logo.svg`.
@@ -112,7 +112,7 @@ After granting Screen Recording, quit and relaunch Glance; macOS applies it on l
   app-level `activate()`. Check `SkyLight.setFrontProcess != nil`.
 - **Performance:** profile the bundled app with Instruments (Time Profiler, SwiftUI).
   Idle CPU should be 0%. Open-to-visible should stay well under one frame beyond
-  the intentional 70 ms show delay (`SwitcherController.showDelay`).
+  the intentional panel delay (Settings → Switcher, default 70 ms).
 
 ## Testing
 
@@ -126,7 +126,7 @@ changes:
 - [ ] ⇥ / ⇧⇥ / arrow keys move the selection, wrapping at the ends
 - [ ] Releasing ⌘, or pressing ↩, focuses the selected window (the right window, not just the app)
 - [ ] Esc closes without switching
-- [ ] In a focused password field (e.g. Safari login, `sudo` in Terminal): ⌘⇥ opens
+- [ ] In a focused password field (e.g. a website login, `sudo` in Terminal): ⌘⇥ opens
       the switcher, ⇥ cycles, releasing ⌘ switches, and ⌘ held + Esc cancels
 - [ ] Hovering selects (but the panel appearing under a still cursor does not); clicking switches
 - [ ] Drag a file from Finder, press ⌘⇥, release ⌘: the panel stays open; hovering the

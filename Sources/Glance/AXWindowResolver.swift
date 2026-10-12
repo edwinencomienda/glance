@@ -9,7 +9,7 @@ func _AXUIElementGetWindow(_ element: AXUIElement, _ id: UnsafeMutablePointer<CG
 /// window on another Space (including a full-screen one) has no reachable
 /// element, and without one we can't raise it, which is what switches Spaces.
 /// For those, rebuild the element from a remote token (pid + "coco" + element
-/// id) and scan element ids until one maps to the window, as AltTab does.
+/// id) and scan element ids until one maps to the window.
 /// Results are cached. Only call this on `WindowFocus`'s queue.
 enum AXWindowResolver {
     private static var cache: [CGWindowID: AXUIElement] = [:]

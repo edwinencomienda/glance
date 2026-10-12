@@ -150,7 +150,7 @@ struct SettingsView: View {
             Divider()
             ToggleRow("Show icon in menu bar", isOn: $settings.showMenuBarIcon)
             if !settings.showMenuBarIcon {
-                Note("To open Settings again, launch Glance from Spotlight, Raycast or Finder.")
+                Note("To open Settings again, launch Glance from Spotlight or Finder.")
             }
         }
     }

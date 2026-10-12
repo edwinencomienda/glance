@@ -47,7 +47,7 @@ Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,)
 | Permissions | Accessibility and Screen Recording status, with shortcuts to fix them |
 
 Changes apply immediately. If you hide the menu bar icon, open Glance again (from
-Spotlight, Raycast or Finder) to bring up Settings. Settings also opens on first
+Spotlight or Finder) to bring up Settings. Settings also opens on first
 launch, until Accessibility is granted.
 
 ## Build & install
@@ -97,7 +97,7 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
   held. Glance never reads what you type.
 - Lists windows on every Space, including full-screen apps. Minimized windows,
   hidden apps (⌘H) and inactive native tabs aren't listed.
-- Uses private SkyLight APIs, as AltTab does, to disable the native ⌘⇥ and to
+- Uses private SkyLight APIs to disable the native ⌘⇥ and to
   focus a specific window. They're loaded at runtime, so if they're missing it
   falls back to public APIs instead of crashing. Native ⌘⇥ is restored on quit,
   including on SIGTERM/SIGINT. After a hard crash (SIGKILL), relaunch Glance and

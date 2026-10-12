@@ -66,9 +66,9 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
   full-screen Space. Neither `_SLPSSetFrontProcessWithOptions` nor
   `NSRunningApplication.activate()` from a background app switches Spaces. Raising
   the window's AX element does, in both directions. But `kAXWindowsAttribute`
-  omits windows on other Spaces (for Ghostty and Edge, at least), so those elements
+  omits windows on other Spaces for many apps, so those elements
   are rebuilt from remote tokens: pid + `"coco"` + element id, scanned up to 6000
-  (AltTab's technique; Edge's window sat at id ~1500, about 50 ms). To keep a
+  (one browser window sat at id ~1500, about 50 ms). To keep a
   switch instant, `open()` prefetches elements for other-Space windows in MRU
   order on the focus queue, and they're cached per window.
 - **MRU across Spaces.** The z-order only covers the visible Spaces, so
