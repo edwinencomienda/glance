@@ -7,6 +7,11 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Fixed
+
+- Browser popups, such as Microsoft Edge's address-bar suggestions, no longer show
+  up as windows in the switcher.
+
 ## [1.0.0] - 2026-10-12
 
 The first release.

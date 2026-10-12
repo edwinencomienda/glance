@@ -45,6 +45,9 @@ enum WindowList {
         var current: [WindowInfo] = [], others: [WindowInfo] = []
         // Windows on full-screen Spaces, keyed by Space, for the overlay filter below.
         var fullScreenSpaceOf: [CGWindowID: UInt64] = [:]
+        // Titled window frames per app, and untitled windows, for the popup filter below.
+        var titledFrames: [pid_t: [CGRect]] = [:]
+        var untitled: Set<CGWindowID> = []
 
         for info in raw {
             guard (info[kCGWindowLayer] as? Int) == 0,
@@ -78,7 +81,9 @@ enum WindowList {
             }
 
             let appName = app.localizedName ?? (info[kCGWindowOwnerName] as? String) ?? ""
-            let title = (info[kCGWindowName] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? appName
+            let windowName = (info[kCGWindowName] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            if windowName == nil { untitled.insert(id) } else { titledFrames[pid, default: []].append(bounds) }
+            let title = windowName ?? appName
             let window = WindowInfo(id: id, pid: pid, title: title, appName: appName,
                                     bounds: bounds, icon: icon(for: app))
             if isCurrent { current.append(window) } else { others.append(window) }
@@ -101,8 +106,27 @@ enum WindowList {
             others.removeAll(where: isOverlay)
         }
 
+        // Browser popups (address-bar suggestions, menus, extension bubbles) are
+        // untitled layer-0 windows drawn over the browser window.
+        if !untitled.isEmpty {
+            let isPopup = { (w: WindowInfo) -> Bool in
+                untitled.contains(w.id) && Self.isPopup(w.bounds, over: titledFrames[w.pid] ?? [])
+            }
+            current.removeAll(where: isPopup)
+            others.removeAll(where: isPopup)
+        }
+
         current.sort { (zIndex[$0.id] ?? .max) < (zIndex[$1.id] ?? .max) }
         return (current, others)
+    }
+
+    /// Whether an untitled window at `frame` is a popup of one of the app's titled
+    /// windows: it overlaps one that is larger than itself. Untitled windows that
+    /// stand alone, or are the app's main window, stay in the list.
+    static func isPopup(_ frame: CGRect, over titledFrames: [CGRect]) -> Bool {
+        titledFrames.contains { parent in
+            parent.intersects(frame) && parent.width * parent.height > frame.width * frame.height
+        }
     }
 
     /// The front-most on-screen window of an app, if any.
