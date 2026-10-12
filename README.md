@@ -33,6 +33,10 @@ Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,)
 
 ## Settings
 
+<p align="center">
+  <img src="docs/images/settings.png" width="420" alt="Glance Settings window">
+</p>
+
 | Section | Options |
 | --- | --- |
 | General | Launch at login · Show icon in menu bar |
