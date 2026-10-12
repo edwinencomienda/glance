@@ -98,6 +98,11 @@ changes:
 - [ ] In a focused password field (e.g. Safari login, `sudo` in Terminal): ⌘⇥ opens
       the switcher, ⇥ cycles, releasing ⌘ switches, and ⌘ held + Esc cancels
 - [ ] Hovering selects (but the panel appearing under a still cursor does not); clicking switches
+- [ ] Drag a file from Finder, press ⌘⇥, release ⌘: the panel stays open; hovering the
+      drag over a tile focuses that window after ~0.45 s; the drop lands in it
+- [ ] In drag mode, hovering a tile while still holding ⌘ only highlights it; it switches
+      right after ⌘ is released
+- [ ] Dropping a drag on a tile focuses that window; ending the drag outside the panel closes it
 - [ ] Thumbnails appear and update; placeholder icons show before the first capture
 - [ ] Many windows (20+) shrink into a grid that fits the screen
 - [ ] Works over a full-screen app and on a second display

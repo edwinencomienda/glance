@@ -9,7 +9,10 @@ final class SwitcherPanel: NSPanel {
     private let effect = NSVisualEffectView()
     private let mouse = MouseCatcher()
 
-    init(model: SwitcherModel, onHover: @escaping (CGPoint) -> Void, onClick: @escaping (CGPoint) -> Void) {
+    init(model: SwitcherModel,
+         onHover: @escaping (CGPoint) -> Void,
+         onClick: @escaping (CGPoint) -> Void,
+         onDragHover: @escaping (CGPoint?) -> Void) {
         super.init(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
         isFloatingPanel = true
@@ -45,6 +48,7 @@ final class SwitcherPanel: NSPanel {
 
         mouse.onMove = onHover
         mouse.onClick = onClick
+        mouse.onDragHover = onDragHover
         mouse.autoresizingMask = [.width, .height]
         effect.addSubview(mouse)
 
@@ -63,6 +67,12 @@ final class SwitcherPanel: NSPanel {
         invalidateShadow()
     }
 
+    /// Converts a screen point to the content's top-left-origin coordinates.
+    func contentPoint(fromScreen point: CGPoint) -> CGPoint? {
+        guard isVisible, frame.contains(point) else { return nil }
+        return CGPoint(x: point.x - frame.minX, y: frame.maxY - point.y)
+    }
+
     private static func roundedMask(radius: CGFloat) -> NSImage {
         let edge = radius * 2 + 1
         let image = NSImage(size: CGSize(width: edge, height: edge), flipped: false) { rect in
@@ -77,10 +87,35 @@ final class SwitcherPanel: NSPanel {
 }
 
 /// Transparent overlay that turns raw mouse input into hover/click callbacks.
-/// Uses an always-active tracking area since the panel is never key.
+/// Uses an always-active tracking area since the panel is never key. It's also a
+/// drag destination, so an item dragged over a tile reports where it hovers
+/// (`nil` when it leaves). It never accepts the drop itself.
 private final class MouseCatcher: NSView {
     var onMove: ((CGPoint) -> Void)?
     var onClick: ((CGPoint) -> Void)?
+    var onDragHover: ((CGPoint?) -> Void)?
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        registerForDraggedTypes([.fileURL, .URL, .string, .tiff, .png, .pdf, .rtf, .html]
+                                + NSFilePromiseReceiver.readableDraggedTypes.map { .init($0) })
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        onDragHover?(convert(sender.draggingLocation, from: nil))
+        return []
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        onDragHover?(convert(sender.draggingLocation, from: nil))
+        return []
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        onDragHover?(nil)
+    }
 
     override var isFlipped: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }

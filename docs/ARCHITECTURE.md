@@ -34,7 +34,7 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
 | `ThumbnailService.swift` | ScreenCaptureKit screenshots at display pixel size, captured in parallel and cached per `CGWindowID`. Each open cancels the previous refresh. |
 | `SwitcherModel.swift` | `@Observable` model, plus `SwitcherLayout`: grid sizing, panel size, hit-testing. |
 | `SwitcherView.swift` | SwiftUI grid. `TileView` is `Equatable`, so a selection change re-renders only two tiles. |
-| `SwitcherPanel.swift` | Borderless, non-activating `NSPanel` with a masked `NSVisualEffectView` (HUD material, 24 pt continuous corners). `MouseCatcher` turns mouse input into hover/click via an always-active tracking area. |
+| `SwitcherPanel.swift` | Borderless, non-activating `NSPanel` with a masked `NSVisualEffectView` (HUD material, 24 pt continuous corners). `MouseCatcher` turns mouse input into hover/click via an always-active tracking area. It's also a drag destination that reports drag hover positions but never accepts a drop. |
 | `WindowFocus.swift` | Focuses one exact window: SkyLight `_SLPSSetFrontProcessWithOptions` and the make-key event records, then AX raise. Also toggles the native ⌘⇥ symbolic hotkeys. |
 
 ## Key decisions
@@ -51,6 +51,15 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
   the other source within 50 ms. While the switcher is open, a 60 Hz check of
   `CGEventSource.flagsState` detects ⌘ release, which the tap can't see under
   secure input. It runs only while open, so idle cost stays zero.
+- **Drag mode (spring-loading).** If the left mouse button is held when the switcher
+  opens, a drag is assumed. Releasing ⌘ no longer commits, and a bare ⇥ keeps
+  cycling. A drag hovering a tile selects it. After `springLoadDelay` (0.45 s) the
+  tile is *armed*, and it's focused only once ⌘ is released, so the window never
+  jumps forward while the shortcut is held. The drag can then continue into it. Mouse-up over a tile
+  focuses it; mouse-up anywhere else closes the switcher. Drag hover comes from
+  `NSDraggingDestination` callbacks, since mouse-moved events aren't delivered
+  during a drag. Drag end is detected by the same open-only input poll that
+  watches ⌘.
 - **AX is used only for raising,** after the panel has closed, on a background queue
   with a 250 ms messaging timeout.
 - **The panel never becomes key.** Keyboard input comes from the event tap, so the

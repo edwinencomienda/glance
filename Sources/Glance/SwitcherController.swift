@@ -5,6 +5,8 @@ import Carbon.HIToolbox
 final class SwitcherController {
     /// A quick ⌘⇥ tap switches without ever drawing the panel (like Windows).
     private static let showDelay: TimeInterval = 0.07
+    /// How long a dragged item must hover a tile before that window comes forward.
+    private static let springLoadDelay: TimeInterval = 0.45
 
     private enum Key {
         static let tab: Int64 = 48, escape: Int64 = 53, returnKey: Int64 = 36, enter: Int64 = 76
@@ -43,7 +45,8 @@ final class SwitcherController {
     private lazy var panel = SwitcherPanel(
         model: model,
         onHover: { [weak self] in self?.hover(at: $0) },
-        onClick: { [weak self] in self?.click(at: $0) }
+        onClick: { [weak self] in self?.click(at: $0) },
+        onDragHover: { [weak self] in self?.dragHover(at: $0) }
     )
     private lazy var tap = HotkeyTap { type, event in
         MainActor.assumeIsolated { self.handle(type, event) }
@@ -52,6 +55,13 @@ final class SwitcherController {
     private var isActive = false
     private var showTimer: Timer?
     private var modifierTimer: Timer?
+    private var springTimer: Timer?
+    private var springIndex: Int?
+    /// The drag has hovered `springIndex` long enough; it switches once ⌘ is up.
+    private var springArmed = false
+    /// Opened while the mouse button was held (dragging a file, text, …). The panel
+    /// then stays open after ⌘ is released so you can hover the drag over a tile.
+    private var isDragMode = false
     private var screen: NSScreen?
     private var lastAction: (action: Action, source: Source, time: TimeInterval)?
 
@@ -80,12 +90,13 @@ final class SwitcherController {
         let flags = event.flags
         switch type {
         case .flagsChanged:
-            if isActive && !flags.contains(.maskCommand) { commit() }
+            if isActive && !isDragMode && !flags.contains(.maskCommand) { commit() }
             return false
 
         case .keyDown:
             let key = event.getIntegerValueField(.keyboardEventKeycode)
-            if key == Key.tab && flags.contains(.maskCommand) {
+            // In drag mode ⌘ may already be released, so a bare ⇥ keeps cycling.
+            if key == Key.tab && (flags.contains(.maskCommand) || isActive) {
                 perform(flags.contains(.maskShift) ? .backward : .forward, from: .tap)
                 return true
             }
@@ -134,6 +145,7 @@ final class SwitcherController {
         let windows = WindowList.current()
         guard !windows.isEmpty else { return }
         isActive = true
+        isDragMode = NSEvent.pressedMouseButtons & 1 != 0
 
         let screen = Self.screenUnderMouse()
         self.screen = screen
@@ -152,15 +164,27 @@ final class SwitcherController {
             MainActor.assumeIsolated { self?.present() }
         }
 
-        // The tap can't see ⌘ being released under Secure Event Input, so also watch
-        // the modifier state, only while the switcher is open (never at idle).
+        // Watch input state only while the switcher is open (never at idle): ⌘ release,
+        // which the tap can't see under Secure Event Input, or the end of a drag.
         let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                if !CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand) { self?.commit() }
-            }
+            MainActor.assumeIsolated { self?.pollInputState() }
         }
         RunLoop.main.add(timer, forMode: .common)
         modifierTimer = timer
+    }
+
+    private func pollInputState() {
+        guard isActive else { return }
+        let commandHeld = CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand)
+        if isDragMode {
+            if NSEvent.pressedMouseButtons & 1 == 0 {
+                dragEnded()
+            } else if springArmed && !commandHeld {
+                commit()
+            }
+        } else if !commandHeld {
+            commit()
+        }
     }
 
     private func present() {
@@ -191,6 +215,11 @@ final class SwitcherController {
         showTimer = nil
         modifierTimer?.invalidate()
         modifierTimer = nil
+        springTimer?.invalidate()
+        springTimer = nil
+        springIndex = nil
+        springArmed = false
+        isDragMode = false
         for (action, _, _) in Self.sessionHotkeys { hotkeys.unregister(id: action.rawValue) }
         panel.orderOut(nil)
     }
@@ -206,6 +235,37 @@ final class SwitcherController {
         guard isActive, let index = model.layout.index(at: point) else { return }
         model.selected = index
         commit()
+    }
+
+    // MARK: - Drag & drop (spring-loading)
+
+    private func dragHover(at point: CGPoint?) {
+        guard isActive else { return }
+        let index = point.flatMap { model.layout.index(at: $0) }
+        if let index, model.selected != index { model.selected = index }
+        guard index != springIndex else { return }
+
+        springIndex = index
+        springArmed = false
+        springTimer?.invalidate()
+        springTimer = nil
+        guard index != nil else { return }
+        // Arm only; the input poll switches once ⌘ is released, so the window never
+        // jumps forward while you're still holding the shortcut.
+        springTimer = Timer.scheduledTimer(withTimeInterval: Self.springLoadDelay, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated { self?.springArmed = true }
+        }
+    }
+
+    /// The drag finished: dropped on a tile focuses that window; anywhere else cancels.
+    private func dragEnded() {
+        if let point = panel.contentPoint(fromScreen: NSEvent.mouseLocation),
+           let index = model.layout.index(at: point) {
+            model.selected = index
+            commit()
+        } else {
+            close()
+        }
     }
 
     private static func screenUnderMouse() -> NSScreen {

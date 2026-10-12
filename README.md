@@ -14,6 +14,7 @@ window, with live thumbnails, not just every app.
 | Release `⌘` / `↩` | Switch to the selected window |
 | `esc` | Cancel |
 | Mouse | Hover to select, click to switch |
+| Drag + `⌘⇥` | While dragging a file, text or image: the panel stays open; release `⌘`, then hover the drag over a window for a moment (or drop on it) to bring that window forward, then drop into it. Nothing switches while `⌘` is still held |
 
 Glance lives in the menu bar (no Dock icon). The menu shows permission status,
 **Launch at Login** and **Quit**.
