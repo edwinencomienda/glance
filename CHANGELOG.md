@@ -7,6 +7,8 @@ for how releases are made.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-13
+
 ### Fixed
 
 - Switching to a window could activate its app without bringing the window to the
@@ -40,6 +42,7 @@ The first release.
 - Menu bar icon and app icon (Icon Composer, full-size on macOS 26).
 - Clean panel that follows light and dark mode, with a soft shadow.
 
-[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/edwinencomienda/glance/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/edwinencomienda/glance/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/edwinencomienda/glance/releases/tag/v1.0.0
