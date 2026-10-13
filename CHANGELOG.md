@@ -7,6 +7,8 @@ for how releases are made.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-13
+
 ### Fixed
 
 - Short windows with a title, such as Finder's "Emptying the Trash…" progress
@@ -47,7 +49,8 @@ The first release.
 - Menu bar icon and app icon (Icon Composer, full-size on macOS 26).
 - Clean panel that follows light and dark mode, with a soft shadow.
 
-[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/edwinencomienda/glance/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/edwinencomienda/glance/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/edwinencomienda/glance/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/edwinencomienda/glance/releases/tag/v1.0.0
