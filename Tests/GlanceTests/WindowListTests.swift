@@ -28,4 +28,18 @@ final class WindowListTests: XCTestCase {
     func testUntitledOnlyWindowIsKept() {
         XCTAssertFalse(WindowList.isPopup(browser, over: []))
     }
+
+    func testShortTitledWindowIsKept() {
+        // Finder's "Emptying the Trash…" progress window.
+        XCTAssertTrue(WindowList.isSwitchableSize(CGSize(width: 404, height: 88), titled: true))
+    }
+
+    func testShortUntitledWindowIsDropped() {
+        XCTAssertFalse(WindowList.isSwitchableSize(CGSize(width: 1920, height: 30), titled: false))
+        XCTAssertFalse(WindowList.isSwitchableSize(CGSize(width: 404, height: 88), titled: false))
+    }
+
+    func testTinyTitledWindowIsDropped() {
+        XCTAssertFalse(WindowList.isSwitchableSize(CGSize(width: 300, height: 30), titled: true))
+    }
 }

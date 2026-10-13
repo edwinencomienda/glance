@@ -58,9 +58,10 @@ enum WindowList {
                   let id = info[kCGWindowNumber] as? CGWindowID,
                   (info[kCGWindowAlpha] as? Double ?? 1) > 0.01,
                   let boundsDict = info[kCGWindowBounds] as? NSDictionary,
-                  let bounds = CGRect(dictionaryRepresentation: boundsDict),
-                  bounds.width >= 100, bounds.height >= 100
+                  let bounds = CGRect(dictionaryRepresentation: boundsDict)
             else { continue }
+            let windowName = (info[kCGWindowName] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            guard Self.isSwitchableSize(bounds.size, titled: windowName != nil) else { continue }
 
             let onScreen = info[kCGWindowIsOnscreen] as? Bool ?? false
             let isCurrent: Bool
@@ -81,7 +82,6 @@ enum WindowList {
             }
 
             let appName = app.localizedName ?? (info[kCGWindowOwnerName] as? String) ?? ""
-            let windowName = (info[kCGWindowName] as? String).flatMap { $0.isEmpty ? nil : $0 }
             if windowName == nil { untitled.insert(id) } else { titledFrames[pid, default: []].append(bounds) }
             let title = windowName ?? appName
             let window = WindowInfo(id: id, pid: pid, title: title, appName: appName,
@@ -118,6 +118,13 @@ enum WindowList {
 
         current.sort { (zIndex[$0.id] ?? .max) < (zIndex[$1.id] ?? .max) }
         return (current, others)
+    }
+
+    /// Untitled windows under 100×100 are helpers and strips. A title marks a real
+    /// window, so short ones such as Finder's progress window (404×88) stay.
+    static func isSwitchableSize(_ size: CGSize, titled: Bool) -> Bool {
+        let minSide: CGFloat = titled ? 50 : 100
+        return size.width >= minSide && size.height >= minSide
     }
 
     /// Whether an untitled window at `frame` is a popup of one of the app's titled

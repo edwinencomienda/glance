@@ -7,6 +7,11 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Fixed
+
+- Short windows with a title, such as Finder's "Emptying the Trash…" progress
+  window, now show up in the switcher.
+
 ## [1.0.2] - 2026-10-13
 
 ### Fixed
