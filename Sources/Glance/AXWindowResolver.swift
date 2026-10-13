@@ -44,6 +44,12 @@ enum AXWindowResolver {
         return _AXUIElementGetWindow(element, &id) == .success ? id : nil
     }
 
+    private static func isWindow(_ element: AXUIElement) -> Bool {
+        var role: CFTypeRef?
+        return AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role) == .success
+            && role as? String == kAXWindowRole
+    }
+
     private static func fromWindowList(_ window: WindowInfo) -> AXUIElement? {
         let app = AXUIElementCreateApplication(window.pid)
         AXUIElementSetMessagingTimeout(app, 0.25)
@@ -67,7 +73,9 @@ enum AXWindowResolver {
             token.withUnsafeMutableBytes { $0.storeBytes(of: elementID, toByteOffset: 12, as: UInt64.self) }
             guard let element = create(token as CFData)?.takeRetainedValue() else { continue }
             AXUIElementSetMessagingTimeout(element, messagingTimeout)
-            if windowID(of: element) == window.id { return element }
+            // Every element inside a window maps to its id too, and some come
+            // before the window itself; raising one of those does nothing.
+            if windowID(of: element) == window.id, isWindow(element) { return element }
         }
         return nil
     }

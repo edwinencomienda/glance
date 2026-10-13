@@ -7,6 +7,11 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Fixed
+
+- Switching to a window could activate its app without bringing the window to the
+  front, if the window had been on another Space or in full screen earlier.
+
 ## [1.0.1] - 2026-10-12
 
 ### Fixed

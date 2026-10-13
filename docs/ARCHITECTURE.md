@@ -68,7 +68,9 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
   the window's AX element does, in both directions. But `kAXWindowsAttribute`
   omits windows on other Spaces for many apps, so those elements
   are rebuilt from remote tokens: pid + `"coco"` + element id, scanned up to 6000
-  (one browser window sat at id ~1500, about 50 ms). To keep a
+  (one browser window sat at id ~1500, about 50 ms). Elements inside a window map
+  to its id as well, and some sit before the window, so a match also has to have
+  the `AXWindow` role. To keep a
   switch instant, `open()` prefetches elements for other-Space windows in MRU
   order on the focus queue, and they're cached per window.
 - **MRU across Spaces.** The z-order only covers the visible Spaces, so
