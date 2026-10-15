@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Tags and publishes a source release on GitHub. The version comes from
-# Resources/Info.plist; the release notes come from that version's section in
-# CHANGELOG.md. No binaries are attached: Glance is built from source.
+# Checks and tags a release. The version comes from Resources/Info.plist; the
+# release notes come from that version's section in CHANGELOG.md. Pushing the
+# tag starts .github/workflows/release.yml, which builds the signed, notarized
+# DMG and publishes the GitHub release.
 #
 # Usage: scripts/release.sh            (dry run: checks only, changes nothing)
-#        scripts/release.sh --publish  (tag, push the tag, create the release)
+#        scripts/release.sh --publish  (tag and push the tag)
 # See docs/RELEASING.md.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -30,15 +31,17 @@ git fetch -q origin main --tags
 ok "On main, clean, in sync, $TAG is new"
 
 # Release notes: the CHANGELOG section for this version, up to the next heading
-NOTES=$(awk -v v="$VERSION" '
-  $0 ~ "^## \\[" v "\\]" { found = 1; next }
-  found && /^## \[/ { exit }
-  found && /^\[.*\]: / { exit }
-  found { print }
-' CHANGELOG.md | sed -e '/./,$!d')
+NOTES=$(scripts/release-notes.sh "$VERSION")
 [[ -n "$NOTES" ]] || fail "CHANGELOG.md has no '## [$VERSION]' section"
 grep -q "^\[$VERSION\]: " CHANGELOG.md || fail "CHANGELOG.md is missing the [$VERSION] link reference"
 ok "Release notes found in CHANGELOG.md"
+
+# The release workflow needs these repository secrets to sign and notarize
+SECRETS=$(gh secret list --json name --jq '.[].name') || fail "Couldn't list repository secrets (gh auth?)"
+for s in CERTIFICATE_BASE64 CERTIFICATE_PASSWORD APPLE_API_KEY_BASE64 APPLE_API_KEY_ID APPLE_API_ISSUER; do
+  grep -qx "$s" <<<"$SECRETS" || fail "Repository secret $s is missing (see docs/RELEASING.md)"
+done
+ok "Signing secrets present"
 
 # Quality gates
 swift test >/dev/null 2>&1 || fail "swift test failed (run it to see why)"
@@ -59,5 +62,5 @@ fi
 git tag -a "$TAG" -m "Glance $VERSION"
 git push -q origin "$TAG"
 ok "Pushed tag $TAG"
-gh release create "$TAG" --title "Glance $VERSION" --notes "$NOTES" --verify-tag
-echo "Released: $(gh release view "$TAG" --json url --jq .url)"
+echo "The release workflow is now building, notarizing and publishing $TAG:"
+echo "  $(gh repo view --json url --jq .url)/actions/workflows/release.yml"

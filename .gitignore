@@ -2,3 +2,9 @@
 build/
 .swiftpm/
 *.xcodeproj
+
+# Signing material
+*.p12
+*.p8
+*.cer
+.env*

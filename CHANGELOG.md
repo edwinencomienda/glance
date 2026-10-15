@@ -7,6 +7,11 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Added
+
+- Releases now include a signed and notarized `Glance.dmg`, so you can install
+  Glance without building it yourself.
+
 ## [1.0.3] - 2026-10-13
 
 ### Fixed

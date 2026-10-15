@@ -18,7 +18,10 @@ Resources/Logo/           Source artwork (SVG): glance-logo.svg (the mark; the m
                           bar icon in MenuBarIcon.swift mirrors it, so update both
                           together) and glance-app-icon.svg (flat icon artwork)
 scripts/build-app.sh      Builds, bundles and signs Glance.app
-scripts/release.sh        Checks, tags and publishes a source release (see RELEASING.md)
+scripts/release.sh        Checks and tags a release (see RELEASING.md)
+scripts/release-notes.sh  Prints a version's CHANGELOG section
+scripts/package-release.sh  Builds the Developer ID–signed, notarized DMG and ZIP
+.github/workflows/release.yml  Builds and publishes the release when a tag is pushed
 CHANGELOG.md              User-facing changes per version
 docs/                     Developer documentation
 ```
@@ -182,6 +185,6 @@ changes:
 ## Releasing
 
 See [RELEASING.md](RELEASING.md): Semantic Versioning, `CHANGELOG.md`, and
-`scripts/release.sh` for tagging and the GitHub release. Releases are source
-only. Builds are universal (arm64 + x86_64) and signed with the builder's own
-identity and the hardened runtime.
+`scripts/release.sh` for tagging. Pushing a tag runs the GitHub Actions release
+workflow, which publishes a universal (arm64 + x86_64) DMG signed with a
+Developer ID and the hardened runtime, and notarized by Apple.

@@ -54,7 +54,14 @@ the menu bar icon, open Glance again (from
 Spotlight or Finder) to bring up Settings. Settings also opens on first
 launch, until Accessibility is granted.
 
-## Build & install
+## Install
+
+Download `Glance.dmg` from the
+[latest release](https://github.com/edwinencomienda/glance/releases/latest),
+open it and drag Glance to Applications. It's signed and notarized by Apple.
+Requires macOS 14+.
+
+## Build from source
 
 ```sh
 scripts/build-app.sh            # builds build/Glance.app
@@ -75,7 +82,8 @@ Run the tests with `swift test`.
 - **Accessibility**: needed to intercept ⌘⇥ and raise the chosen window.
 - **Screen Recording**: needed for thumbnails and window titles.
 
-Grants are tied to the code signature. The build script signs with your first
+Grants are tied to the code signature. Release downloads keep the same
+signature across updates. For your own builds, the build script signs with your first
 `Apple Development` identity, so grants survive rebuilds. If there isn't one, it
 falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Set
 `GLANCE_SIGN_IDENTITY` to choose an identity.

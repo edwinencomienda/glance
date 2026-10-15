@@ -123,4 +123,3 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
 - Recency within an app on another Space is only as fresh as its last app
   activation (we don't run per-app AX observers, to keep idle cost at zero).
 - The shortcut is limited to ⌘⇥ or ⌥⇥; there's no arbitrary shortcut recorder.
-- Not notarized.
