@@ -6,6 +6,17 @@ tag starts the [release workflow](../.github/workflows/release.yml), which
 builds, signs, notarizes and publishes everything. People can still build from
 source with `scripts/build-app.sh`.
 
+## Quick checklist
+
+1. `CHANGELOG.md`: `[Unreleased]` → `[X.Y.Z] - YYYY-MM-DD`, update the links.
+2. `Resources/Info.plist`: version `X.Y.Z`, build number + 1.
+3. `scripts/build-app.sh --install` and the [manual checklist](DEVELOPMENT.md#testing).
+4. Commit `Release X.Y.Z` and push to `main`.
+5. `scripts/release.sh` (dry run), then `scripts/release.sh --publish`.
+6. Watch the workflow in the Actions tab, then install from the release's DMG.
+
+Details for each step follow.
+
 ## Versioning
 
 [Semantic Versioning](https://semver.org/), `MAJOR.MINOR.PATCH`:
@@ -42,8 +53,9 @@ The version lives in `Resources/Info.plist`:
      bottom:
      ```
      [Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.1.0...HEAD
-     [1.1.0]: https://github.com/edwinencomienda/glance/compare/v1.0.0...v1.1.0
+     [1.1.0]: https://github.com/edwinencomienda/glance/compare/v1.0.3...v1.1.0
      ```
+     The new version's link compares against the previous release's tag.
    - In `Resources/Info.plist`, set `CFBundleShortVersionString` to `1.1.0` and
      increment `CFBundleVersion`.
 2. **Test.** Run `scripts/build-app.sh --install` and go through the manual
@@ -63,9 +75,14 @@ The version lives in `Resources/Info.plist`:
 7. **Check the download:** install from the release's DMG on a Mac and confirm
    it opens without a Gatekeeper warning. Replacing a local
    `scripts/build-app.sh` build with the release changes the code signature,
-   so macOS asks for Accessibility and Screen Recording again. Installed copies
-   of older versions now see the update through **Check for Updates…**, which
-   reads the latest published, non-prerelease GitHub release.
+   so macOS asks for Accessibility and Screen Recording again.
+
+Publishing makes the update visible to everyone straight away: installed copies
+(1.1.0 and later) check GitHub's latest release and show **Glance X.Y.Z
+Available…**. The checker only sees published, non-draft, non-prerelease
+releases whose tag is exactly `vX.Y.Z`, which is what `scripts/release.sh`
+and the workflow produce. Don't edit a release into a draft or prerelease, or
+rename its tag, once it's out.
 
 To build the DMG without releasing, run the workflow by hand from the Actions
 tab (**Run workflow**). It uploads the DMG and ZIP as a workflow artifact and
@@ -124,6 +141,19 @@ scripts/package-release.sh           # → build/Glance.dmg and build/Glance.zip
 ```
 
 This notarizes but publishes nothing.
+
+### Renewing credentials
+
+- **Developer ID certificate** (valid for 5 years): when it's renewed, export
+  the new one as `.p12` and update both certificate secrets as above. Apps
+  already released stay valid, because they were notarized with a timestamp.
+- **App Store Connect API key:** if it's revoked or replaced, update
+  `APPLE_API_KEY_BASE64`, `APPLE_API_KEY_ID` and `APPLE_API_ISSUER`, and
+  `.env.prod` if you build locally.
+
+`scripts/release.sh` only checks that the secrets exist, not that they work.
+To test new credentials without releasing, run the workflow by hand from the
+Actions tab.
 
 ## Fixing a release
 
