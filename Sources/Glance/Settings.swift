@@ -106,6 +106,10 @@ final class Settings {
     var showTitles: Bool {
         didSet { save(showTitles, "showTitles") }
     }
+    /// Look for a newer release on GitHub at most once a day.
+    var checkForUpdates: Bool {
+        didSet { save(checkForUpdates, "checkForUpdates") }
+    }
     /// Bundle identifiers of apps that never appear in the switcher.
     var excludedBundleIDs: [String] {
         didSet { save(excludedBundleIDs, "excludedBundleIDs") }
@@ -125,6 +129,7 @@ final class Settings {
         thumbnailSize = d.string(forKey: "thumbnailSize").flatMap(ThumbnailSize.init) ?? .medium
         showTitles = d.object(forKey: "showTitles") as? Bool ?? true
         excludedBundleIDs = d.stringArray(forKey: "excludedBundleIDs") ?? []
+        checkForUpdates = d.object(forKey: "checkForUpdates") as? Bool ?? true
     }
 
     private func save(_ value: Any, _ key: String) {

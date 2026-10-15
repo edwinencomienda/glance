@@ -60,6 +60,7 @@ enum Brand {
 
 struct SettingsView: View {
     @Bindable private var settings = Settings.shared
+    private let updates = UpdateChecker.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
 
@@ -88,6 +89,7 @@ struct SettingsView: View {
                     appearance
                     excludedApps
                     permissions
+                    updatesCard
                     footer
                 }
                 .padding(.horizontal, 22)
@@ -109,6 +111,7 @@ struct SettingsView: View {
         }
         .onPreferenceChange(MascotCenterKey.self) { mascotCenter = $0 }
         .onReceive(refresh) { _ in refreshStatus() }
+        .onAppear { updates.checkIfDue() }
     }
 
     // MARK: Header
@@ -313,6 +316,48 @@ struct SettingsView: View {
             Divider()
             PermissionRow(title: "Screen Recording", detail: "Window thumbnails and titles",
                           granted: screenRecordingGranted, pane: "Privacy_ScreenCapture")
+        }
+    }
+
+    private var updatesCard: some View {
+        SettingsCard("Updates", symbol: "arrow.down.circle") {
+            ToggleRow("Check for updates automatically", isOn: $settings.checkForUpdates)
+            Divider()
+            HStack {
+                updateStatus
+                Spacer()
+                if let version = updates.availableVersion {
+                    Button("Download") { NSWorkspace.shared.open(updates.releasePage(for: version)) }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                } else {
+                    Button("Check Now") { Task { await updates.check() } }
+                        .controlSize(.small)
+                        .disabled(updates.state.isChecking)
+                }
+            }
+            Note("Glance asks GitHub for the latest release once a day. Nothing is downloaded or installed for you.")
+        }
+    }
+
+    @ViewBuilder private var updateStatus: some View {
+        switch updates.state {
+        case .idle:
+            Text("Version \(UpdateChecker.currentVersion)")
+        case .checking:
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Checking…")
+            }
+        case .upToDate:
+            Label("\(UpdateChecker.currentVersion) is the latest version", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green, .primary)
+        case .available(let version):
+            Label("Glance \(version) is available", systemImage: "arrow.down.circle.fill")
+                .foregroundStyle(Brand.blue, .primary)
+        case .failed:
+            Label("Couldn't reach GitHub", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange, .primary)
         }
     }
 

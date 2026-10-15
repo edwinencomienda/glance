@@ -11,6 +11,11 @@ for how releases are made.
 
 - Releases now include a signed and notarized `Glance.dmg`, so you can install
   Glance without building it yourself.
+- Glance tells you when a new version is out. It checks GitHub at most once a
+  day, shows **Glance X.Y.Z Available…** in the menu bar menu, and has
+  **Check for Updates…** in the menu and an Updates section in Settings. It
+  never downloads or installs anything by itself, and you can turn automatic
+  checks off.
 
 ## [1.0.3] - 2026-10-13
 

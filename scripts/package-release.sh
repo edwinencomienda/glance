@@ -1,24 +1,45 @@
 #!/usr/bin/env bash
 # Builds a Developer ID–signed, notarized Glance.app and packages it as
 # build/Glance.dmg and build/Glance.zip, ready to attach to a GitHub release.
-# The release workflow (.github/workflows/release.yml) runs this on every tag.
+# The release workflow (.github/workflows/release.yml) runs this on every tag;
+# run it locally to build a notarized DMG without releasing.
 #
-# Needs (environment variables; never commit them):
-#   SIGN_IDENTITY     "Developer ID Application: Name (TEAMID)"
+# Credentials come from the environment or from .env.prod (gitignored; see
+# .env.example):
+#   SIGN_IDENTITY     "Developer ID Application: Name (TEAMID)". Optional: the
+#                     first Developer ID Application identity in the keychain.
 #   APPLE_API_KEY     path to the App Store Connect API key (.p8)
 #   APPLE_API_KEY_ID  the key's 10-character ID
 #   APPLE_API_ISSUER  the issuer UUID
+#
+# Usage: scripts/package-release.sh          (build, sign, notarize, package)
+#        scripts/package-release.sh --check  (only check the credentials)
 # See docs/RELEASING.md.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 fail() { echo "✗ $*" >&2; exit 1; }
 
-for var in SIGN_IDENTITY APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER; do
-  [[ -n "${!var:-}" ]] || fail "$var isn't set"
+if [[ -f .env.prod ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env.prod
+  set +a
+fi
+
+SIGN_IDENTITY="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null \
+  | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -1)}"
+[[ "$SIGN_IDENTITY" == "Developer ID Application:"* ]] \
+  || fail "No Developer ID Application identity (set SIGN_IDENTITY or install the certificate)"
+for var in APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER; do
+  [[ -n "${!var:-}" ]] || fail "$var isn't set (see .env.example)"
 done
-[[ "$SIGN_IDENTITY" == "Developer ID Application:"* ]] || fail "SIGN_IDENTITY must be a Developer ID Application identity"
 [[ -f "$APPLE_API_KEY" ]] || fail "APPLE_API_KEY doesn't point to a file"
+
+if [[ "${1:-}" == "--check" ]]; then
+  echo "✓ Signing as $SIGN_IDENTITY; notarization credentials set"
+  exit 0
+fi
 
 APP=build/Glance.app
 DMG=build/Glance.dmg

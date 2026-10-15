@@ -61,7 +61,11 @@ The version lives in `Resources/Info.plist`:
    tests, runs `scripts/package-release.sh` and creates the GitHub release
    "Glance X.Y.Z" with the changelog notes and the DMG and ZIP attached.
 7. **Check the download:** install from the release's DMG on a Mac and confirm
-   it opens without a Gatekeeper warning.
+   it opens without a Gatekeeper warning. Replacing a local
+   `scripts/build-app.sh` build with the release changes the code signature,
+   so macOS asks for Accessibility and Screen Recording again. Installed copies
+   of older versions now see the update through **Check for Updates…**, which
+   reads the latest published, non-prerelease GitHub release.
 
 To build the DMG without releasing, run the workflow by hand from the Actions
 tab (**Run workflow**). It uploads the DMG and ZIP as a workflow artifact and
@@ -90,19 +94,36 @@ secret. The workflow imports the certificate into a throwaway keychain with a
 random password and deletes it, and the API key, when the job ends.
 
 To export the `.p12`: in Keychain Access, find "Developer ID Application: …",
-right-click → **Export…**, choose `.p12` and set a password. Delete the
-exported `.p12` and the `.p8` from disk once they're stored as secrets, and
-never commit them.
+right-click → **Export…**, choose `.p12` and set a password. Before uploading,
+check the file and password match. This should print the "Developer ID
+Application" subject (`-legacy` is needed because Keychain Access exports with
+RC2 encryption, which OpenSSL 3 rejects otherwise):
+
+```sh
+openssl pkcs12 -in cert.p12 -nokeys -legacy | grep subject
+base64 -i cert.p12 | gh secret set CERTIFICATE_BASE64
+gh secret set CERTIFICATE_PASSWORD   # prompts for the password
+```
+
+Always update `CERTIFICATE_BASE64` and `CERTIFICATE_PASSWORD` together. If the
+workflow fails at "Import signing certificate" with *The user name or
+passphrase you entered is not correct*, they're from different exports.
+Delete the exported `.p12` and the `.p8` from disk once they're stored as
+secrets, and never commit them.
 
 ### Building a notarized DMG locally
 
+Copy `.env.example` to `.env.prod` (gitignored) and fill in the API key's
+path, ID and issuer, quoting values with spaces. `SIGN_IDENTITY` is optional:
+it defaults to the first "Developer ID Application" identity in your keychain.
+Then:
+
 ```sh
-export SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"
-export APPLE_API_KEY=/path/to/AuthKey_XXXXXXXXXX.p8
-export APPLE_API_KEY_ID=XXXXXXXXXX
-export APPLE_API_ISSUER=00000000-0000-0000-0000-000000000000
-scripts/package-release.sh   # → build/Glance.dmg and build/Glance.zip
+scripts/package-release.sh --check   # confirms the identity and credentials
+scripts/package-release.sh           # → build/Glance.dmg and build/Glance.zip
 ```
+
+This notarizes but publishes nothing.
 
 ## Fixing a release
 

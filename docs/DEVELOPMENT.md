@@ -21,6 +21,7 @@ scripts/build-app.sh      Builds, bundles and signs Glance.app
 scripts/release.sh        Checks and tags a release (see RELEASING.md)
 scripts/release-notes.sh  Prints a version's CHANGELOG section
 scripts/package-release.sh  Builds the Developer ID–signed, notarized DMG and ZIP
+.env.example              Template for .env.prod (credentials for local package-release.sh runs)
 .github/workflows/release.yml  Builds and publishes the release when a tag is pushed
 CHANGELOG.md              User-facing changes per version
 docs/                     Developer documentation
@@ -159,6 +160,11 @@ changes:
       choosing it focuses Settings; closing Settings removes the Dock icon
 - [ ] Settings → Show as "App icons": one icon tile per window (titles tell same-app
       windows apart), same ordering and keys, no thumbnails captured
+- [ ] Check for Updates… (menu bar and the app menu): says "up to date" on the latest
+      version, "Couldn't check" offline. To see an update offered, copy the app, set its
+      `CFBundleShortVersionString` lower, re-sign it ad-hoc, run it, and run
+      `defaults delete com.edwinencomienda.glance lastUpdateCheck` first: the menu shows
+      "Glance X.Y.Z Available…" and Settings → Updates shows Download
 
 ## Conventions
 

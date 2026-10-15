@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let switcher = SwitcherController()
     private let settings = Settings.shared
     private let settingsWindow = SettingsWindowController()
+    private let updates = UpdateChecker.shared
     private var statusItem: NSStatusItem?
     private var started = false
     private var permissionTimer: Timer?
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.appearance = settings.theme.appearance
 
         if !CGPreflightScreenCaptureAccess() { CGRequestScreenCaptureAccess() }
+        updates.checkIfDue()
 
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         if AXIsProcessTrustedWithOptions(options) {
@@ -83,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
         appMenu.addItem(settingsItem)
+        appMenu.addItem(checkForUpdatesItem())
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Hide Glance", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(.separator())
@@ -120,15 +123,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             warning.image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: nil)
             menu.addItem(warning)
         }
+        if let version = updates.availableVersion {
+            let update = NSMenuItem(title: "Glance \(version) Available…", action: #selector(openUpdate), keyEquivalent: "")
+            update.target = self
+            update.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: nil)
+            menu.addItem(update)
+        }
         menu.addItem(.separator())
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
+        menu.addItem(checkForUpdatesItem())
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Glance", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        // Any found update shows up the next time the menu opens.
+        updates.checkIfDue()
+    }
+
+    private func checkForUpdatesItem() -> NSMenuItem {
+        let item = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
+        item.target = self
+        return item
     }
 
     @objc private func showSettings() {
         settingsWindow.show()
+    }
+
+    @objc private func checkForUpdates() {
+        updates.checkNowAndReport()
+    }
+
+    @objc private func openUpdate() {
+        guard let version = updates.availableVersion else { return }
+        NSWorkspace.shared.open(updates.releasePage(for: version))
     }
 }

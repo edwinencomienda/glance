@@ -8,3 +8,4 @@ build/
 *.p8
 *.cer
 .env*
+!.env.example

@@ -33,8 +33,9 @@
 | Mouse | Hover to select, click to switch |
 | Drag + `⌘⇥` | While dragging a file, text or image: the panel stays open; release `⌘`, then hover the drag over a window for a moment (or drop on it) to bring that window forward, then drop into it. Nothing switches while `⌘` is still held |
 
-Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,) and
-**Quit**, plus a warning item if a permission is missing.
+Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,),
+**Check for Updates…** and **Quit**, plus a warning item if a permission is
+missing and a **Glance X.Y.Z Available…** item when there's a newer release.
 
 ## Settings
 
@@ -46,6 +47,7 @@ Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,)
 | Appearance | Theme (System / Light / Dark, for the switcher and Settings) · Show as window thumbnails or app icons (one tile per window either way) · Size (small / medium / large) · Show window titles |
 | Excluded Apps | Apps whose windows never appear in the switcher |
 | Permissions | Accessibility and Screen Recording status, with shortcuts to fix them |
+| Updates | Check for updates automatically (on by default) · Check Now / Download |
 
 Changes apply immediately. While Settings is open, Glance shows in the Dock and in
 ⌘⇥ (Glance's switcher and the macOS one) like a regular app, with ⌘W to close.
@@ -60,6 +62,16 @@ Download `Glance.dmg` from the
 [latest release](https://github.com/edwinencomienda/glance/releases/latest),
 open it and drag Glance to Applications. It's signed and notarized by Apple.
 Requires macOS 14+.
+
+### Updates
+
+Glance asks GitHub for the latest release when it starts, and when you open its
+menu or Settings, at most once a day. When there's a newer version, the menu bar
+menu shows **Glance X.Y.Z Available…**, which opens the release page; download
+the DMG and drag Glance to Applications to replace the old copy. Glance never
+downloads or installs anything by itself, and it sends nothing but a standard
+request for the latest release. Turn automatic checks off in Settings → Updates;
+**Check for Updates…** still works.
 
 ## Build from source
 
