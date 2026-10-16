@@ -99,7 +99,9 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
   focuses it; mouse-up anywhere else closes the switcher. Drag hover comes from
   `NSDraggingDestination` callbacks, since mouse-moved events aren't delivered
   during a drag. Drag end is detected by the same open-only input poll that
-  watches ⌘.
+  watches ⌘. AppKit's own spring-loading calls `makeKeyAndOrderFront` on the window
+  under a paused drag, which would bring the closed panel back, so
+  `SwitcherPanel` ignores that call (the panel is only shown via `show`).
 - **Settings without overhead.** Values are read at the moment they're used, so
   there are no observers on the hot path. The only eager changes are the theme
   (`NSApp.appearance`, covering the panel and Settings), the

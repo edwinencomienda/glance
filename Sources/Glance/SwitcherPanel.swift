@@ -57,6 +57,12 @@ final class SwitcherPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
+    /// AppKit's built-in spring-loading calls this on the window under a paused
+    /// drag. After a drag switches windows the panel is ordered out, but it can
+    /// still be the drag's destination, so this would bring it back as a dead panel.
+    /// The panel is only ever shown through `show(size:on:)`.
+    override func makeKeyAndOrderFront(_ sender: Any?) {}
+
     /// The visible panel's rectangle in screen coordinates.
     private var panelFrame: CGRect { frame.insetBy(dx: Self.shadowMargin, dy: Self.shadowMargin) }
 

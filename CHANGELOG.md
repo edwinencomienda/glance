@@ -17,6 +17,11 @@ for how releases are made.
   window's display instead of the pointer's, and can list only the windows on
   that display.
 
+### Fixed
+
+- Switching windows by dragging a file over a tile no longer leaves a frozen
+  switcher on screen when the drag pauses afterwards.
+
 ## [1.1.0] - 2026-10-15
 
 ### Added
