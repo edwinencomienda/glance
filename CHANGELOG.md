@@ -19,6 +19,9 @@ for how releases are made.
 
 ### Fixed
 
+- A quick ⌘⇥ while dragging a file now switches straight to the previous window
+  and the drag carries on into it, instead of opening the switcher. Hold ⌘ a
+  moment longer to get the switcher and pick a window with the drag.
 - Switching windows by dragging a file over a tile no longer leaves a frozen
   switcher on screen when the drag pauses afterwards.
 - Thumbnails no longer pop in one by one on the first ⌘⇥ after using the

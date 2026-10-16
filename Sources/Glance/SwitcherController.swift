@@ -5,6 +5,10 @@ import Carbon.HIToolbox
 final class SwitcherController {
     /// How long a dragged item must hover a tile before that window comes forward.
     private static let springLoadDelay: TimeInterval = 0.45
+    /// In drag mode the panel waits at least this long before appearing. Releasing ⌘
+    /// before then is a quick switch: it commits like a normal ⌘⇥ tap and the drag
+    /// carries on into the new window, with no panel flash.
+    private static let dragTapGrace: TimeInterval = 0.25
 
     private enum Key {
         static let tab: Int64 = 48, escape: Int64 = 53, returnKey: Int64 = 36, enter: Int64 = 76
@@ -74,6 +78,8 @@ final class SwitcherController {
     /// Opened while the mouse button was held (dragging a file, text, …). The panel
     /// then stays open after ⌘ is released so you can hover the drag over a tile.
     private var isDragMode = false
+    /// The panel has been ordered in (the show delay has passed).
+    private var isShown = false
     /// Opened with modifier + `: only the frontmost app's windows are listed.
     private var isAppMode = false
     private var screen: NSScreen?
@@ -117,7 +123,7 @@ final class SwitcherController {
         let flags = event.flags
         switch type {
         case .flagsChanged:
-            if isActive && !isDragMode && !flags.contains(shortcut.eventFlag) { commit() }
+            if isActive && !flags.contains(shortcut.eventFlag) && (!isDragMode || !isShown) { commit() }
             return false
 
         case .keyDown:
@@ -225,7 +231,10 @@ final class SwitcherController {
             }
         }
 
-        showTimer = Timer.scheduledTimer(withTimeInterval: settings.showDelayMs / 1000, repeats: false) { [weak self] _ in
+        // A drag gets a longer grace so a quick ⌘⇥ switches instead of opening the panel.
+        var showDelay = settings.showDelayMs / 1000
+        if isDragMode { showDelay = max(showDelay, Self.dragTapGrace) }
+        showTimer = Timer.scheduledTimer(withTimeInterval: showDelay, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated { self?.present() }
         }
 
@@ -241,7 +250,14 @@ final class SwitcherController {
     private func pollInputState() {
         guard isActive else { return }
         let commandHeld = CGEventSource.flagsState(.combinedSessionState).contains(shortcut.eventFlag)
-        if isDragMode {
+        if isDragMode && !isShown {
+            // Still in the quick-tap window: behave like a normal ⌘⇥.
+            if !commandHeld {
+                commit()
+            } else if NSEvent.pressedMouseButtons & 1 == 0 {
+                isDragMode = false // the drag ended first; carry on as a normal switcher
+            }
+        } else if isDragMode {
             if NSEvent.pressedMouseButtons & 1 == 0 {
                 dragEnded()
             } else if springArmed && !commandHeld {
@@ -254,6 +270,7 @@ final class SwitcherController {
 
     private func present() {
         guard isActive, let screen else { return }
+        isShown = true
         panel.show(size: model.layout.panelSize, on: screen)
         // Registered here rather than in open() so a quick tap never pays for them.
         for (action, key, mods) in Self.sessionHotkeys {
@@ -288,6 +305,7 @@ final class SwitcherController {
         springIndex = nil
         springArmed = false
         isDragMode = false
+        isShown = false
         isAppMode = false
         for (action, _, _) in Self.sessionHotkeys { hotkeys.unregister(id: action.rawValue) }
         panel.orderOut(nil)

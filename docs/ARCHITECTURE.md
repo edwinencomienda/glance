@@ -92,8 +92,10 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
   `CGEventSource.flagsState` detects ⌘ release, which the tap can't see under
   secure input. It runs only while open, so idle cost stays zero.
 - **Drag mode (spring-loading).** If the left mouse button is held when the switcher
-  opens, a drag is assumed. Releasing ⌘ no longer commits, and a bare ⇥ keeps
-  cycling. A drag hovering a tile selects it. After `springLoadDelay` (0.45 s) the
+  opens, a drag is assumed. The panel then waits at least `dragTapGrace` (0.25 s)
+  to appear, and releasing ⌘ before it does commits like a normal quick tap, so
+  "switch, then drop" needs no panel. Once the panel is up, releasing ⌘ no longer
+  commits, and a bare ⇥ keeps cycling. A drag hovering a tile selects it. After `springLoadDelay` (0.45 s) the
   tile is *armed*, and it's focused only once ⌘ is released, so the window never
   jumps forward while the shortcut is held. The drag can then continue into it. Mouse-up over a tile
   focuses it; mouse-up anywhere else closes the switcher. Drag hover comes from

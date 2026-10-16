@@ -20,6 +20,8 @@
   <img src="docs/images/settings.png" width="420" alt="Glance Settings window">
 </p>
 
+See [docs/FEATURES.md](docs/FEATURES.md) for the full feature list.
+
 ## Usage
 
 | Keys | Action |
@@ -32,7 +34,7 @@
 | Release `⌘` / `↩` | Switch to the selected window |
 | `esc` | Cancel |
 | Mouse | Hover to select, click to switch |
-| Drag + `⌘⇥` | While dragging a file, text or image: the panel stays open; release `⌘`, then hover the drag over a window for a moment (or drop on it) to bring that window forward, then drop into it. Nothing switches while `⌘` is still held |
+| Drag + `⌘⇥` | While dragging a file, text or image: a quick tap switches to the previous window and the drag continues into it. Hold `⌘` until the panel appears and it stays open; release `⌘`, then hover the drag over a window for a moment (or drop on it) to bring that window forward, then drop into it. Nothing switches while `⌘` is still held |
 
 Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,),
 **Check for Updates…** and **Quit**, plus a warning item if a permission is

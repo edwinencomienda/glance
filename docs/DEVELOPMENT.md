@@ -135,7 +135,9 @@ changes:
 - [ ] In a focused password field (e.g. a website login, `sudo` in Terminal): ⌘⇥ opens
       the switcher, ⇥ cycles, releasing ⌘ switches, and ⌘ held + Esc cancels
 - [ ] Hovering selects (but the panel appearing under a still cursor does not); clicking switches
-- [ ] Drag a file from Finder, press ⌘⇥, release ⌘: the panel stays open; hovering the
+- [ ] Drag a file from Finder, quickly tap ⌘⇥: it switches to the previous window with no
+      panel, and the drag can be dropped there
+- [ ] Drag a file from Finder, press ⌘⇥ and hold ⌘ until the panel appears, release ⌘: the panel stays open; hovering the
       drag over a tile focuses that window after ~0.45 s; the drop lands in it
 - [ ] In drag mode, hovering a tile while still holding ⌘ only highlights it; it switches
       right after ⌘ is released
