@@ -21,6 +21,9 @@ for how releases are made.
 
 - Switching windows by dragging a file over a tile no longer leaves a frozen
   switcher on screen when the drag pauses afterwards.
+- Thumbnails no longer pop in one by one on the first ⌘⇥ after using the
+  same-app switcher (⌘`) or "Only show windows on that display". Glance kept only
+  the thumbnails of the windows that switcher showed and dropped the rest.
 
 ## [1.1.0] - 2026-10-15
 

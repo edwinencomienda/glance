@@ -14,12 +14,13 @@ final class ThumbnailService {
         return out
     }
 
-    func refresh(_ windows: [WindowInfo], maxSize: CGSize, scale: CGFloat,
+    /// Captures `windows` (the ones this switcher shows). `live` is every window
+    /// that still exists: thumbnails of other windows are dropped, but ones that are
+    /// merely filtered out of this switcher (same-app, one display) are kept.
+    func refresh(_ windows: [WindowInfo], live: Set<CGWindowID>, maxSize: CGSize, scale: CGFloat,
                  onImage: @escaping @MainActor (CGWindowID, CGImage) -> Void) {
         task?.cancel()
-        // Drop thumbnails of windows that no longer exist.
-        let live = Set(windows.map(\.id))
-        cache = cache.filter { live.contains($0.key) }
+        cache = Self.pruned(cache, keeping: live)
 
         task = Task { [weak self] in
             guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false),
@@ -44,6 +45,12 @@ final class ThumbnailService {
                 }
             }
         }
+    }
+
+    /// Keeps only the entries of windows in `live`.
+    nonisolated static func pruned<Value>(_ cache: [CGWindowID: Value],
+                                          keeping live: Set<CGWindowID>) -> [CGWindowID: Value] {
+        cache.filter { live.contains($0.key) }
     }
 
     /// Capture at exactly the pixel size we display — no wasted GPU work or memory.

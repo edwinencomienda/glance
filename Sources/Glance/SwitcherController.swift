@@ -180,6 +180,10 @@ final class SwitcherController {
                                         excluding: Set(settings.excludedBundleIDs))
         // NSWorkspace keeps this up to date itself; reading it is no IPC.
         let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        // Every window that still exists, taken before the same-app and display
+        // filters. Caches are pruned against this, so a filtered switcher doesn't
+        // evict the thumbnails and AX elements of the windows it hides.
+        let live = Set(listed.current.map(\.id)).union(listed.others.map(\.id))
         if appOnly {
             guard let frontPID else { return }
             listed.current.removeAll { $0.pid != frontPID }
@@ -212,11 +216,11 @@ final class SwitcherController {
 
         // Warm AX lookups for other-Space windows so switching to one is instant.
         let otherIDs = Set(listed.others.map(\.id))
-        WindowFocus.prefetch(windows.filter { otherIDs.contains($0.id) }, live: Set(windows.map(\.id)))
+        WindowFocus.prefetch(windows.filter { otherIDs.contains($0.id) }, live: live)
 
         // Icon mode captures nothing at all.
         if !iconsOnly {
-            thumbnails.refresh(windows, maxSize: layout.thumbSize, scale: screen.backingScaleFactor) { [weak self] id, image in
+            thumbnails.refresh(windows, live: live, maxSize: layout.thumbSize, scale: screen.backingScaleFactor) { [weak self] id, image in
                 self?.model.thumbnails[id] = image
             }
         }
