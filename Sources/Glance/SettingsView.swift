@@ -184,7 +184,20 @@ struct SettingsView: View {
                     }
                 }
             }
+            Divider()
+            ToggleRow("\(settings.shortcut.appWindowsSymbol) switches between the current app's windows",
+                      isOn: $settings.appWindowsShortcut)
+            Note(appWindowsNote)
         }
+    }
+
+    private var appWindowsNote: String {
+        let symbol = settings.shortcut.appWindowsSymbol
+        let base = "Hold \(settings.shortcut.modifierSymbol) and press ` to step through the front app's windows, ⇧` to go back."
+        guard settings.appWindowsShortcut else { return base }
+        return settings.shortcut == .commandTab
+            ? base + " Replaces the macOS \(symbol) window cycling."
+            : base + " While on, \(symbol) no longer types a grave accent."
     }
 
     private var switcher: some View {
@@ -200,6 +213,19 @@ struct SettingsView: View {
                     }
                 }
             }
+            Divider()
+            HStack(spacing: tileSpacing) {
+                ForEach(Settings.PanelDisplay.allCases) { display in
+                    ChoiceTile(selected: settings.panelDisplay == display, compact: true) {
+                        settings.panelDisplay = display
+                    } content: {
+                        Label(display.label, systemImage: display.symbol)
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                }
+            }
+            ToggleRow("Only show windows on that display", isOn: $settings.currentDisplayOnly)
+            Note("Display options apply when more than one display is connected.")
             Divider()
             HStack {
                 Text("Panel delay")

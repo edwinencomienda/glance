@@ -16,6 +16,9 @@ final class Settings {
         var id: String { rawValue }
         var label: String { self == .commandTab ? "⌘ Command + Tab" : "⌥ Option + Tab" }
         var symbol: String { self == .commandTab ? "⌘⇥" : "⌥⇥" }
+        var modifierSymbol: String { self == .commandTab ? "⌘" : "⌥" }
+        /// The same-app window switcher: the shortcut's modifier plus the key above ⇥.
+        var appWindowsSymbol: String { modifierSymbol + "`" }
         var eventFlag: CGEventFlags { self == .commandTab ? .maskCommand : .maskAlternate }
         var carbonModifier: Int { self == .commandTab ? cmdKey : optionKey }
     }
@@ -24,6 +27,14 @@ final class Settings {
         case all, current
         var id: String { rawValue }
         var label: String { self == .all ? "All Spaces" : "Current Space only" }
+    }
+
+    /// Which display the switcher panel appears on.
+    enum PanelDisplay: String, CaseIterable, Identifiable {
+        case pointer, activeWindow
+        var id: String { rawValue }
+        var label: String { self == .pointer ? "Pointer's display" : "Active window's display" }
+        var symbol: String { self == .pointer ? "cursorarrow" : "macwindow" }
     }
 
     enum Theme: String, CaseIterable, Identifiable {
@@ -86,8 +97,19 @@ final class Settings {
     var showMenuBarIcon: Bool {
         didSet { save(showMenuBarIcon, "showMenuBarIcon"); onChange?(.menuBarIcon) }
     }
+    /// Modifier + ` opens the switcher with only the frontmost app's windows.
+    var appWindowsShortcut: Bool {
+        didSet { save(appWindowsShortcut, "appWindowsShortcut"); onChange?(.shortcut) }
+    }
     var spacesScope: SpacesScope {
         didSet { save(spacesScope.rawValue, "spacesScope") }
+    }
+    var panelDisplay: PanelDisplay {
+        didSet { save(panelDisplay.rawValue, "panelDisplay") }
+    }
+    /// List only windows on the display the panel appears on.
+    var currentDisplayOnly: Bool {
+        didSet { save(currentDisplayOnly, "currentDisplayOnly") }
     }
     /// Delay before the panel appears, in milliseconds. A quick tap within this
     /// window switches without drawing anything.
@@ -121,7 +143,10 @@ final class Settings {
         let d = UserDefaults.standard
         shortcut = d.string(forKey: "shortcut").flatMap(Shortcut.init) ?? .commandTab
         showMenuBarIcon = d.object(forKey: "showMenuBarIcon") as? Bool ?? true
+        appWindowsShortcut = d.object(forKey: "appWindowsShortcut") as? Bool ?? false
         spacesScope = d.string(forKey: "spacesScope").flatMap(SpacesScope.init) ?? .all
+        panelDisplay = d.string(forKey: "panelDisplay").flatMap(PanelDisplay.init) ?? .pointer
+        currentDisplayOnly = d.object(forKey: "currentDisplayOnly") as? Bool ?? false
         let delay = d.object(forKey: "showDelayMs") as? Double ?? 70
         showDelayMs = min(max(delay, Self.showDelayRange.lowerBound), Self.showDelayRange.upperBound)
         theme = d.string(forKey: "theme").flatMap(Theme.init) ?? .system

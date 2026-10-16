@@ -7,6 +7,16 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Added
+
+- Same-app window switcher: turn it on in Settings → Shortcut, then ⌘` (or ⌥`
+  with the ⌥⇥ shortcut) works like ⌘⇥ but shows only the front app's windows.
+  A quick tap jumps to that app's previous window. With ⌘⇥ it replaces macOS's
+  own ⌘` window cycling.
+- Multiple displays: Settings → Switcher can show the panel on the active
+  window's display instead of the pointer's, and can list only the windows on
+  that display.
+
 ## [1.1.0] - 2026-10-15
 
 ### Added

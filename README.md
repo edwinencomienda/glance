@@ -27,6 +27,7 @@
 | `⌘⇥` (tap) | Jump to the previous window instantly; no UI appears |
 | `⌘⇥` (hold ⌘) | Show the switcher; each `⇥` moves forward |
 | `⌘⇧⇥` | Move backward |
+| `` ⌘` `` / `` ⌘⇧` `` | Same as `⌘⇥` / `⌘⇧⇥`, but only the front app's windows (turn on in Settings → Shortcut) |
 | `←` `→` `↑` `↓` | Navigate while the switcher is open |
 | Release `⌘` / `↩` | Switch to the selected window |
 | `esc` | Cancel |
@@ -42,8 +43,8 @@ missing and a **Glance X.Y.Z Available…** item when there's a newer release.
 | Section | Options |
 | --- | --- |
 | General | Launch at login · Show icon in menu bar |
-| Shortcut | `⌘⇥` (replaces the macOS app switcher) or `⌥⇥` (keeps it) |
-| Switcher | Show windows from all Spaces or the current Space only · Panel delay (0–300 ms; a quick tap within it switches without showing the panel) |
+| Shortcut | `⌘⇥` (replaces the macOS app switcher) or `⌥⇥` (keeps it) · Switch between the current app's windows with `` ⌘` `` (or `` ⌥` `` with `⌥⇥`; off by default). With `⌘⇥` it replaces the macOS `` ⌘` `` window cycling; with `⌥⇥`, `` ⌥` `` no longer types a grave accent while it's on |
+| Switcher | Show windows from all Spaces or the current Space only · Show the panel on the pointer's display or the active window's display · Only show windows on that display · Panel delay (0–300 ms; a quick tap within it switches without showing the panel) |
 | Appearance | Theme (System / Light / Dark, for the switcher and Settings) · Show as window thumbnails or app icons (one tile per window either way) · Size (small / medium / large) · Show window titles |
 | Excluded Apps | Apps whose windows never appear in the switcher |
 | Permissions | Accessibility and Screen Recording status, with shortcuts to fix them |
@@ -122,7 +123,8 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
   held. Glance never reads what you type.
 - Lists windows on every Space, including full-screen apps. Minimized windows,
   hidden apps (⌘H) and inactive native tabs aren't listed.
-- Uses private SkyLight APIs to disable the native ⌘⇥ and to
+- Uses private SkyLight APIs to disable the native ⌘⇥ (and ⌘`, when the
+  same-app switcher is on) and to
   focus a specific window. They're loaded at runtime, so if they're missing it
   falls back to public APIs instead of crashing. Native ⌘⇥ is restored on quit,
   including on SIGTERM/SIGINT. After a hard crash (SIGKILL), relaunch Glance and

@@ -14,6 +14,8 @@ final class SwitcherController {
 
     private enum Action: UInt32 {
         case forward = 1, backward, cancel, commit, left, right, up, down
+        /// Modifier + ` / ⇧`: only the frontmost app's windows.
+        case appForward, appBackward
     }
 
     /// Input arrives from two paths: the event tap (full keyboard, but blind while
@@ -26,6 +28,11 @@ final class SwitcherController {
     private static let triggerHotkeys: [(Action, Int, Int)] = [
         (.forward, kVK_Tab, 0),
         (.backward, kVK_Tab, shiftKey),
+    ]
+    /// Registered when the same-app switcher is on.
+    private static let appHotkeys: [(Action, Int, Int)] = [
+        (.appForward, kVK_ANSI_Grave, 0),
+        (.appBackward, kVK_ANSI_Grave, shiftKey),
     ]
     /// Registered only while the switcher is open (the modifier is held, so it's
     /// part of the combo).
@@ -41,6 +48,7 @@ final class SwitcherController {
     private let settings = Settings.shared
     /// The shortcut currently registered; changes go through `applyShortcut()`.
     private var shortcut = Settings.shared.shortcut
+    private var appWindowsShortcut = false
 
     private let model = SwitcherModel()
     private let thumbnails = ThumbnailService()
@@ -66,6 +74,8 @@ final class SwitcherController {
     /// Opened while the mouse button was held (dragging a file, text, …). The panel
     /// then stays open after ⌘ is released so you can hover the drag over a tile.
     private var isDragMode = false
+    /// Opened with modifier + `: only the frontmost app's windows are listed.
+    private var isAppMode = false
     private var screen: NSScreen?
     private var lastAction: (action: Action, source: Source, time: TimeInterval)?
 
@@ -85,16 +95,20 @@ final class SwitcherController {
     /// switcher, so that's disabled; ⌥⇥ leaves the native one alone.
     func applyShortcut() {
         close()
-        for (action, _, _) in Self.triggerHotkeys { hotkeys.unregister(id: action.rawValue) }
+        for (action, _, _) in Self.triggerHotkeys + Self.appHotkeys { hotkeys.unregister(id: action.rawValue) }
         shortcut = settings.shortcut
-        for (action, key, mods) in Self.triggerHotkeys {
+        appWindowsShortcut = settings.appWindowsShortcut
+        let triggers = Self.triggerHotkeys + (appWindowsShortcut ? Self.appHotkeys : [])
+        for (action, key, mods) in triggers {
             hotkeys.register(id: action.rawValue, keyCode: key, modifiers: mods | shortcut.carbonModifier)
         }
         NativeSwitcher.setEnabled(shortcut != .commandTab)
+        NativeSwitcher.setWindowCyclingEnabled(!(appWindowsShortcut && shortcut == .commandTab))
     }
 
     func stop() {
         NativeSwitcher.setEnabled(true)
+        NativeSwitcher.setWindowCyclingEnabled(true)
     }
 
     // MARK: - Keyboard
@@ -111,6 +125,11 @@ final class SwitcherController {
             // In drag mode the modifier may already be released, so a bare ⇥ keeps cycling.
             if key == Key.tab && (flags.contains(shortcut.eventFlag) || isActive) {
                 perform(flags.contains(.maskShift) ? .backward : .forward, from: .tap)
+                return true
+            }
+            if key == Key.grave && appWindowsShortcut && flags.contains(shortcut.eventFlag)
+                && (!isActive || isAppMode) {
+                perform(flags.contains(.maskShift) ? .appBackward : .appForward, from: .tap)
                 return true
             }
             guard isActive else { return false }
@@ -143,6 +162,8 @@ final class SwitcherController {
         switch action {
         case .forward: isActive ? step(1) : open(reverse: false)
         case .backward: isActive ? step(-1) : open(reverse: true)
+        case .appForward: isActive ? step(1) : open(reverse: false, appOnly: true)
+        case .appBackward: isActive ? step(-1) : open(reverse: true, appOnly: true)
         case .cancel: close()
         case .commit: commit()
         case .left: step(-1)
@@ -154,15 +175,28 @@ final class SwitcherController {
 
     // MARK: - Lifecycle
 
-    private func open(reverse: Bool) {
-        let listed = WindowList.current(includeOtherSpaces: settings.spacesScope == .all,
+    private func open(reverse: Bool, appOnly: Bool = false) {
+        var listed = WindowList.current(includeOtherSpaces: settings.spacesScope == .all,
                                         excluding: Set(settings.excludedBundleIDs))
-        let windows = mru.order(current: listed.current, others: listed.others)
+        // NSWorkspace keeps this up to date itself; reading it is no IPC.
+        let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        if appOnly {
+            guard let frontPID else { return }
+            listed.current.removeAll { $0.pid != frontPID }
+            listed.others.removeAll { $0.pid != frontPID }
+        }
+        var windows = mru.order(current: listed.current, others: listed.others)
+
+        let screens = NSScreen.screens
+        let frames = screens.map(\.frame)
+        let screen = panelScreen(screens: screens, frames: frames, current: listed.current, frontPID: frontPID)
+        if settings.currentDisplayOnly, screens.count > 1, let index = screens.firstIndex(of: screen) {
+            windows.removeAll { Displays.screenIndex(for: $0.bounds, in: frames) != index }
+        }
         guard !windows.isEmpty else { return }
         isActive = true
+        isAppMode = appOnly
         isDragMode = NSEvent.pressedMouseButtons & 1 != 0
-
-        let screen = Self.screenUnderMouse()
         self.screen = screen
         let iconsOnly = settings.displayStyle == .icons
         let layout = SwitcherLayout.make(count: windows.count, in: screen.visibleFrame.size,
@@ -250,6 +284,7 @@ final class SwitcherController {
         springIndex = nil
         springArmed = false
         isDragMode = false
+        isAppMode = false
         for (action, _, _) in Self.sessionHotkeys { hotkeys.unregister(id: action.rawValue) }
         panel.orderOut(nil)
     }
@@ -296,6 +331,18 @@ final class SwitcherController {
         } else {
             close()
         }
+    }
+
+    /// The display the panel appears on: under the pointer, or the one holding the
+    /// active window (the frontmost app's front window), falling back to the pointer.
+    private func panelScreen(screens: [NSScreen], frames: [CGRect],
+                             current: [WindowInfo], frontPID: pid_t?) -> NSScreen {
+        if settings.panelDisplay == .activeWindow, screens.count > 1,
+           let active = current.first(where: { $0.pid == frontPID }) ?? current.first,
+           let index = Displays.screenIndex(for: active.bounds, in: frames) {
+            return screens[index]
+        }
+        return Self.screenUnderMouse()
     }
 
     private static func screenUnderMouse() -> NSScreen {

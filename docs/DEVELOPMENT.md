@@ -123,7 +123,7 @@ After granting Screen Recording, quit and relaunch Glance; macOS applies it on l
 ## Testing
 
 `swift test` covers the pure logic in `SwitcherLayout` (grid sizing, row balancing,
-hit-testing) and `WindowMRU` (ordering across Spaces). Everything that touches the WindowServer, Accessibility or
+hit-testing), `WindowMRU` (ordering across Spaces) and `Displays` (which display a window is on). Everything that touches the WindowServer, Accessibility or
 ScreenCaptureKit needs a manual check. Run this list before merging UI or input
 changes:
 
@@ -150,7 +150,13 @@ changes:
       the corners exactly
 - [ ] Many windows (20+) shrink into a grid that fits the screen
 - [ ] Works over a full-screen app and on a second display
-- [ ] Quitting from the menu bar restores the native ⌘⇥
+- [ ] Quitting from the menu bar restores the native ⌘⇥ (and ⌘` if the same-app switcher was on)
+- [ ] Settings → Shortcut → same-app switcher on: in an app with 3+ windows, a quick ⌘` jumps
+      to its previous window; holding ⌘ shows only that app's windows; ` / ⇧` step; ⌘⇥
+      still lists every window. Off: ⌘` goes back to macOS's own window cycling
+- [ ] Two displays, Settings → Switcher → "Active window's display": the panel opens on the
+      display with the focused window, wherever the pointer is. "Only show windows on that
+      display" lists just that display's windows (on every Space if All Spaces is on)
 - [ ] Settings: switching to ⌥⇥ works immediately and gives ⌘⇥ back to macOS;
       switching back to ⌘⇥ takes it over again
 - [ ] Settings: hiding the menu bar icon removes it; launching Glance again opens Settings

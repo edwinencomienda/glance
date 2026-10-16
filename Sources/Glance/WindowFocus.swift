@@ -37,10 +37,17 @@ enum SkyLight {
 /// The native ⌘⇥ / ⌘⇧⇥ / ⌘` switcher hotkeys, which we disable while running.
 enum NativeSwitcher {
     private static let hotkeys: [Int32] = [1, 2] // commandTab, commandShiftTab
+    private static let windowCycling: Int32 = 27 // ⌘`: move focus to the app's next window
 
     static func setEnabled(_ enabled: Bool) {
         guard let fn = SkyLight.setSymbolicHotKeyEnabled else { return }
         for key in hotkeys { _ = fn(key, enabled) }
+    }
+
+    /// The native ⌘` window cycling, replaced by Glance's same-app switcher.
+    static func setWindowCyclingEnabled(_ enabled: Bool) {
+        guard let fn = SkyLight.setSymbolicHotKeyEnabled else { return }
+        _ = fn(windowCycling, enabled)
     }
 }
 
