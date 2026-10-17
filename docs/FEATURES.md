@@ -16,7 +16,7 @@ added each feature ("Unreleased" means it's on `main` but not released yet). See
 | **Windows on every Space**, including full-screen apps; picking one switches to its Space | 1.0.0 |
 | **Raises the exact window** you pick, even if it was on another Space or in full screen | 1.0.2 |
 | **Works in password fields**: ⌘⇥, ⌘⇧⇥ and ⇥-cycling still work in secure text inputs | 1.0.0 |
-| **Same-app switcher**: ⌘` (or ⌥`) shows only the front app's windows; a tap jumps to its previous window | Unreleased |
+| **Same-app switcher**: ⌘` (or ⌥`) shows only the front app's windows as larger tiles; a tap jumps to its previous window | Unreleased |
 
 ## Drag-to-switch
 

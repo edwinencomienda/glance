@@ -29,7 +29,7 @@ See [docs/FEATURES.md](docs/FEATURES.md) for the full feature list.
 | `⌘⇥` (tap) | Jump to the previous window instantly; no UI appears |
 | `⌘⇥` (hold ⌘) | Show the switcher; each `⇥` moves forward |
 | `⌘⇧⇥` | Move backward |
-| `` ⌘` `` / `` ⌘⇧` `` | Same as `⌘⇥` / `⌘⇧⇥`, but only the front app's windows (turn on in Settings → Shortcut) |
+| `` ⌘` `` / `` ⌘⇧` `` | Same as `⌘⇥` / `⌘⇧⇥`, but only the front app's windows, shown as larger tiles (turn on in Settings → Shortcut) |
 | `←` `→` `↑` `↓` | Navigate while the switcher is open |
 | Release `⌘` / `↩` | Switch to the selected window |
 | `esc` | Cancel |

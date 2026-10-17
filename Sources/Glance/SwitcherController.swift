@@ -9,6 +9,9 @@ final class SwitcherController {
     /// before then is a quick switch: it commits like a normal ⌘⇥ tap and the drag
     /// carries on into the new window, with no panel flash.
     private static let dragTapGrace: TimeInterval = 0.25
+    /// The same-app switcher usually lists only a few windows, so its tiles start
+    /// this much larger (the layout still shrinks them to fit the screen).
+    private static let appModeTileScale: CGFloat = 1.3
 
     private enum Key {
         static let tab: Int64 = 48, escape: Int64 = 53, returnKey: Int64 = 36, enter: Int64 = 76
@@ -209,9 +212,9 @@ final class SwitcherController {
         isDragMode = NSEvent.pressedMouseButtons & 1 != 0
         self.screen = screen
         let iconsOnly = settings.displayStyle == .icons
+        let baseWidth = iconsOnly ? settings.thumbnailSize.iconTileWidth : settings.thumbnailSize.width
         let layout = SwitcherLayout.make(count: windows.count, in: screen.visibleFrame.size,
-                                         thumbWidth: iconsOnly ? settings.thumbnailSize.iconTileWidth
-                                                               : settings.thumbnailSize.width,
+                                         thumbWidth: (baseWidth * (appOnly ? Self.appModeTileScale : 1)).rounded(),
                                          showTitles: settings.showTitles,
                                          iconsOnly: iconsOnly)
 

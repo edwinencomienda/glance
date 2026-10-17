@@ -154,7 +154,7 @@ changes:
 - [ ] Works over a full-screen app and on a second display
 - [ ] Quitting from the menu bar restores the native ⌘⇥ (and ⌘` if the same-app switcher was on)
 - [ ] Settings → Shortcut → same-app switcher on: in an app with 3+ windows, a quick ⌘` jumps
-      to its previous window; holding ⌘ shows only that app's windows; ` / ⇧` step; ⌘⇥
+      to its previous window; holding ⌘ shows only that app's windows, in larger tiles than ⌘⇥; ` / ⇧` step; ⌘⇥
       still lists every window. Off: ⌘` goes back to macOS's own window cycling
 - [ ] Two displays, Settings → Switcher → "Active window's display": the panel opens on the
       display with the focused window, wherever the pointer is. "Only show windows on that
