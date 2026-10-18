@@ -5,29 +5,28 @@ struct SwitcherView: View {
 
     var body: some View {
         let layout = model.layout
-        VStack(spacing: SwitcherLayout.spacing) {
-            ForEach(0..<layout.rows, id: \.self) { row in
-                HStack(spacing: SwitcherLayout.spacing) {
-                    ForEach(0..<layout.itemsInRow(row), id: \.self) { col in
-                        let index = row * layout.columns + col
-                        if index < model.windows.count {
-                            let window = model.windows[index]
-                            TileView(
-                                window: window,
-                                image: model.thumbnails[window.id],
-                                thumbSize: layout.thumbSize,
-                                titleHeight: layout.titleHeight,
-                                iconsOnly: layout.iconsOnly,
-                                selected: index == model.selected
-                            )
-                            .equatable()
-                        }
-                    }
+        // Tiles are placed by `SwitcherLayout.tileFrame` and keyed by window, so
+        // when one is closed it fades out and the others slide into place.
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(model.windows.enumerated()), id: \.element.id) { index, window in
+                if let frame = layout.tileFrame(at: index) {
+                    TileView(
+                        window: window,
+                        image: model.thumbnails[window.id],
+                        thumbSize: layout.thumbSize,
+                        titleHeight: layout.titleHeight,
+                        iconsOnly: layout.iconsOnly,
+                        selected: index == model.selected,
+                        button: model.hovered == index
+                            ? TileButton(hot: model.buttonHot, quit: model.quitMode) : nil
+                    )
+                    .equatable()
+                    .position(x: frame.midX, y: frame.midY)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
             }
         }
-        .padding(SwitcherLayout.padding)
-        .frame(width: layout.panelSize.width, height: layout.panelSize.height)
+        .frame(width: layout.panelSize.width, height: layout.panelSize.height, alignment: .topLeading)
     }
 }
 
@@ -38,10 +37,13 @@ struct TileView: View, Equatable {
     let titleHeight: CGFloat
     let iconsOnly: Bool
     let selected: Bool
+    /// The close / quit button, shown while the pointer is over this tile.
+    let button: TileButton?
 
     static func == (a: TileView, b: TileView) -> Bool {
         a.window == b.window && a.image === b.image && a.thumbSize == b.thumbSize
             && a.titleHeight == b.titleHeight && a.iconsOnly == b.iconsOnly && a.selected == b.selected
+            && a.button == b.button
     }
 
     private var iconSize: CGFloat { max(22, min(32, thumbSize.width * 0.14)) }
@@ -75,6 +77,11 @@ struct TileView: View, Equatable {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(.primary.opacity(selected ? 0.11 : 0))
         }
+        .overlay(alignment: .topTrailing) {
+            if let button {
+                button.padding(SwitcherLayout.buttonInset)
+            }
+        }
     }
 
     @ViewBuilder private var thumbnail: some View {
@@ -105,5 +112,26 @@ struct TileView: View, Equatable {
                     }
                 }
         }
+    }
+}
+
+/// Round button in a hovered tile's corner: ✕ closes the window, or with the quit
+/// modifier held, ⏻ quits the app. Its position matches `SwitcherLayout.buttonFrame`.
+struct TileButton: View, Equatable {
+    let hot: Bool
+    let quit: Bool
+
+    var body: some View {
+        Image(systemName: quit ? "power" : "xmark")
+            .font(.system(size: 9, weight: .bold))
+            .foregroundStyle(.black)
+            .frame(width: SwitcherLayout.buttonSize, height: SwitcherLayout.buttonSize)
+            // White in both themes so it reads on any thumbnail; under the pointer
+            // it grows slightly and lifts.
+            .background { Circle().fill(.white) }
+            .overlay { Circle().strokeBorder(.black.opacity(0.12), lineWidth: 0.5) }
+            .shadow(color: .black.opacity(hot ? 0.4 : 0.25), radius: hot ? 3 : 2, y: 1)
+            .scaleEffect(hot ? 1.1 : 1)
+            .help(quit ? "Quit App" : "Close Window")
     }
 }

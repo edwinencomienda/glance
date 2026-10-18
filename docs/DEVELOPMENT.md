@@ -159,6 +159,11 @@ changes:
 - [ ] Two displays, Settings → Switcher → "Active window's display": the panel opens on the
       display with the focused window, wherever the pointer is. "Only show windows on that
       display" lists just that display's windows (on every Space if All Spaces is on)
+- [ ] Hovering a tile shows a white ✕ in its top-right corner (not while dragging a file). Clicking it
+      closes that window: the tile shrinks and fades at once, the others slide into place, the panel
+      shrinks and stays open. Holding ⌥ (⌘ with ⌥⇥) turns ✕ into ⏻, which quits the app and removes
+      all its tiles. W / Q do the same for the selected tile. A TextEdit document with unsaved
+      changes: ✕ shows "Save changes?"; cancelling it brings the tile back after ~3 s
 - [ ] Settings: switching to ⌥⇥ works immediately and gives ⌘⇥ back to macOS;
       switching back to ⌘⇥ takes it over again
 - [ ] Settings: hiding the menu bar icon removes it; launching Glance again opens Settings

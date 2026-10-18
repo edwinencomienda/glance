@@ -59,4 +59,33 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertNil(layout.index(at: CGPoint(x: 2, y: 2)), "padding is not a tile")
         XCTAssertNil(layout.index(at: CGPoint(x: startX + item.width + s / 2, y: p + 10)), "gap is not a tile")
     }
+
+    func testTileFramesMatchHitTesting() {
+        let layout = SwitcherLayout.make(count: 7, in: CGSize(width: 1280, height: 800))
+        for i in 0..<layout.count {
+            let frame = try! XCTUnwrap(layout.tileFrame(at: i))
+            XCTAssertEqual(layout.index(at: CGPoint(x: frame.midX, y: frame.midY)), i, "tile \(i)")
+        }
+        XCTAssertNil(layout.tileFrame(at: layout.count))
+    }
+
+    func testButtonSitsInTileTopRightCorner() {
+        let layout = SwitcherLayout.make(count: 3, in: screen)
+        let tile = try! XCTUnwrap(layout.tileFrame(at: 1))
+        let button = try! XCTUnwrap(layout.buttonFrame(at: 1))
+        XCTAssertTrue(tile.contains(button))
+        XCTAssertEqual(tile.maxX - button.maxX, SwitcherLayout.buttonInset)
+        XCTAssertEqual(button.minY - tile.minY, SwitcherLayout.buttonInset)
+    }
+
+    func testHitDistinguishesButtonFromTile() {
+        let layout = SwitcherLayout.make(count: 3, in: screen)
+        let tile = try! XCTUnwrap(layout.tileFrame(at: 2))
+        let button = try! XCTUnwrap(layout.buttonFrame(at: 2))
+        XCTAssertEqual(layout.hit(at: CGPoint(x: button.midX, y: button.midY)), .button(2))
+        XCTAssertEqual(layout.hit(at: CGPoint(x: button.minX - 2, y: button.midY)), .button(2), "slightly forgiving")
+        XCTAssertEqual(layout.hit(at: CGPoint(x: tile.midX, y: tile.midY)), .tile(2))
+        XCTAssertEqual(layout.hit(at: CGPoint(x: tile.minX + 5, y: tile.minY + 5)), .tile(2), "top-left is the tile")
+        XCTAssertNil(layout.hit(at: CGPoint(x: 1, y: 1)))
+    }
 }

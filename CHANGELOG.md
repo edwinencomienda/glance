@@ -7,6 +7,14 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Added
+
+- Close windows and quit apps from the switcher: hover a tile and click the ✕ in
+  its corner to close that window, or hold ⌥ (⌘ with the ⌥⇥ shortcut) and click
+  to quit its app. W and Q do the same for the selected tile. The switcher stays
+  open so you can close several in a row, and a tile comes back if its window
+  stays open, for example when you cancel a "Save changes?" dialog.
+
 ## [1.2.0] - 2026-10-17
 
 ### Added

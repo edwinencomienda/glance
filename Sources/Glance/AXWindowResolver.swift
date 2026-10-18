@@ -1,4 +1,5 @@
 import ApplicationServices
+import Foundation
 
 @_silgen_name("_AXUIElementGetWindow")
 func _AXUIElementGetWindow(_ element: AXUIElement, _ id: UnsafeMutablePointer<CGWindowID>) -> AXError
@@ -10,9 +11,11 @@ func _AXUIElementGetWindow(_ element: AXUIElement, _ id: UnsafeMutablePointer<CG
 /// element, and without one we can't raise it, which is what switches Spaces.
 /// For those, rebuild the element from a remote token (pid + "coco" + element
 /// id) and scan element ids until one maps to the window.
-/// Results are cached. Only call this on `WindowFocus`'s queue.
+/// Results are cached. Safe to call from any background queue (never the main
+/// thread: a lookup is Accessibility IPC).
 enum AXWindowResolver {
     private static var cache: [CGWindowID: AXUIElement] = [:]
+    private static let lock = NSLock()
     private static let maxElementID: UInt64 = 6000
     private static let scanBudget: TimeInterval = 0.2
     private static let messagingTimeout: Float = 0.1
@@ -25,18 +28,18 @@ enum AXWindowResolver {
     }()
 
     static func element(for window: WindowInfo) -> AXUIElement? {
-        if let cached = cache[window.id] {
+        if let cached = lock.withLock({ cache[window.id] }) {
             if windowID(of: cached) == window.id { return cached }
-            cache[window.id] = nil
+            lock.withLock { cache[window.id] = nil }
         }
         let element = fromWindowList(window) ?? fromRemoteTokens(window)
-        if let element { cache[window.id] = element }
+        if let element { lock.withLock { cache[window.id] = element } }
         return element
     }
 
     /// Drops cached elements for windows that no longer exist.
     static func prune(keeping ids: Set<CGWindowID>) {
-        cache = cache.filter { ids.contains($0.key) }
+        lock.withLock { cache = cache.filter { ids.contains($0.key) } }
     }
 
     private static func windowID(of element: AXUIElement) -> CGWindowID? {

@@ -7,6 +7,23 @@ final class SwitcherModel {
     var thumbnails: [CGWindowID: CGImage] = [:]
     var selected = 0
     var layout = SwitcherLayout.empty
+    /// The tile under the pointer, which shows the close (or quit) button.
+    var hovered: Int?
+    /// The pointer is on the hovered tile's button.
+    var buttonHot = false
+    /// The quit modifier is held: the button quits the app instead of closing the window.
+    var quitMode = false
+}
+
+/// What the pointer is over.
+enum SwitcherHit: Equatable {
+    case tile(Int)
+    /// The close / quit button in the tile's top-right corner.
+    case button(Int)
+
+    var index: Int {
+        switch self { case .tile(let i), .button(let i): i }
+    }
 }
 
 /// All geometry is computed up front so the panel can be sized and placed in one
@@ -66,6 +83,39 @@ struct SwitcherLayout: Equatable {
             if layout.panelSize.height <= maxH || thumbW <= minWidth { return layout }
             thumbW = (thumbW * 0.88).rounded()
         }
+    }
+
+    static let buttonSize: CGFloat = 20
+    /// Distance from the tile's top and right edges to the button.
+    static let buttonInset: CGFloat = 4
+
+    /// The tile's rectangle in panel coordinates (top-left origin).
+    func tileFrame(at index: Int) -> CGRect? {
+        guard index >= 0, index < count else { return nil }
+        let item = itemSize
+        let row = index / columns, col = index % columns
+        let n = itemsInRow(row)
+        let rowWidth = CGFloat(n) * item.width + CGFloat(n - 1) * Self.spacing
+        let x = (panelSize.width - rowWidth) / 2 + CGFloat(col) * (item.width + Self.spacing)
+        let y = Self.padding + CGFloat(row) * (item.height + Self.spacing)
+        return CGRect(x: x, y: y, width: item.width, height: item.height)
+    }
+
+    /// The close / quit button's rectangle: the tile's top-right corner.
+    func buttonFrame(at index: Int) -> CGRect? {
+        guard let tile = tileFrame(at: index) else { return nil }
+        return CGRect(x: tile.maxX - Self.buttonInset - Self.buttonSize, y: tile.minY + Self.buttonInset,
+                      width: Self.buttonSize, height: Self.buttonSize)
+    }
+
+    /// The tile, or its button, under `point` (top-left origin). The button's hit
+    /// area is a little larger than it looks, so it's easy to hit.
+    func hit(at point: CGPoint) -> SwitcherHit? {
+        guard let index = index(at: point) else { return nil }
+        if let button = buttonFrame(at: index), button.insetBy(dx: -3, dy: -3).contains(point) {
+            return .button(index)
+        }
+        return .tile(index)
     }
 
     /// Index of the tile under `point` (top-left origin), if any.

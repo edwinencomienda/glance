@@ -21,6 +21,10 @@ final class Settings {
         var appWindowsSymbol: String { modifierSymbol + "`" }
         var eventFlag: CGEventFlags { self == .commandTab ? .maskCommand : .maskAlternate }
         var carbonModifier: Int { self == .commandTab ? cmdKey : optionKey }
+        /// Held while the switcher is open, turns the tile's close button into Quit.
+        /// It can't be the shortcut's own modifier, which is always held.
+        var quitFlag: CGEventFlags { self == .commandTab ? .maskAlternate : .maskCommand }
+        var quitSymbol: String { self == .commandTab ? "⌥" : "⌘" }
     }
 
     enum SpacesScope: String, CaseIterable, Identifiable {

@@ -17,6 +17,7 @@ added each feature ("Unreleased" means it's on `main` but not released yet). See
 | **Raises the exact window** you pick, even if it was on another Space or in full screen | 1.0.2 |
 | **Works in password fields**: ⌘⇥, ⌘⇧⇥ and ⇥-cycling still work in secure text inputs | 1.0.0 |
 | **Same-app switcher**: ⌘` (or ⌥`) shows only the front app's windows as larger tiles; a tap jumps to its previous window | 1.2.0 |
+| **Close and quit from the switcher**: hover a tile for a ✕ that closes the window (hold ⌥ to quit the app), or press W / Q; the tile animates away and the switcher stays open | Unreleased |
 
 ## Drag-to-switch
 

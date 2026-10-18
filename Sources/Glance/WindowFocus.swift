@@ -53,6 +53,9 @@ enum NativeSwitcher {
 
 enum WindowFocus {
     private static let queue = DispatchQueue(label: "glance.focus", qos: .userInteractive)
+    /// Close requests get their own queue so they never wait behind `prefetch`'s
+    /// lookups of windows on other Spaces.
+    private static let closeQueue = DispatchQueue(label: "glance.close", qos: .userInteractive)
 
     /// Brings a specific window to front, switching Spaces if it lives on another
     /// one. Runs off the main thread so a hung app can never stall the switcher UI.
@@ -82,6 +85,40 @@ enum WindowFocus {
             AXUIElementSetAttributeValue(element, kAXMainAttribute as CFString, kCFBooleanTrue)
             AXUIElementPerformAction(element, kAXRaiseAction as CFString)
         }
+    }
+
+    /// Closes a window by pressing its own close button, exactly as a click on it
+    /// would, so the app can still ask to save changes. Runs on the focus queue;
+    /// `done` gets `false` on the main thread if the window has no close button.
+    static func close(_ window: WindowInfo, done: @escaping @MainActor (Bool) -> Void) {
+        if window.pid == ProcessInfo.processInfo.processIdentifier {
+            DispatchQueue.main.async {
+                let own = NSApp.windows.first { $0.windowNumber == Int(window.id) }
+                own?.performClose(nil)
+                MainActor.assumeIsolated { done(own != nil) }
+            }
+            return
+        }
+        closeQueue.async {
+            var pressed = false
+            if let element = AXWindowResolver.element(for: window) {
+                var value: CFTypeRef?
+                if AXUIElementCopyAttributeValue(element, kAXCloseButtonAttribute as CFString, &value) == .success,
+                   let button = value, CFGetTypeID(button) == AXUIElementGetTypeID() {
+                    pressed = AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString) == .success
+                }
+            }
+            DispatchQueue.main.async { MainActor.assumeIsolated { done(pressed) } }
+        }
+    }
+
+    /// Asks an app to quit, the same as choosing Quit from its menu, so it can still
+    /// ask to save changes. Never quits Glance itself.
+    @MainActor
+    static func quit(pid: pid_t) -> Bool {
+        guard pid != ProcessInfo.processInfo.processIdentifier,
+              let app = NSRunningApplication(processIdentifier: pid) else { return false }
+        return app.terminate()
     }
 
     /// Resolves AX elements for windows on other Spaces ahead of time (called when

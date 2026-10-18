@@ -25,7 +25,8 @@ final class SwitcherPanel: NSPanel {
     init(model: SwitcherModel,
          onHover: @escaping (CGPoint) -> Void,
          onClick: @escaping (CGPoint) -> Void,
-         onDragHover: @escaping (CGPoint?) -> Void) {
+         onDragHover: @escaping (CGPoint?) -> Void,
+         onExit: @escaping () -> Void) {
         super.init(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
         isFloatingPanel = true
@@ -46,6 +47,7 @@ final class SwitcherPanel: NSPanel {
         mouse.onMove = onHover
         mouse.onClick = onClick
         mouse.onDragHover = onDragHover
+        mouse.onExit = onExit
         mouse.autoresizingMask = [.width, .height]
         chrome.content.addSubview(mouse)
 
@@ -76,6 +78,22 @@ final class SwitcherPanel: NSPanel {
         chrome.frame = CGRect(x: m, y: m, width: size.width, height: size.height)
         alphaValue = 1
         orderFrontRegardless()
+    }
+
+    /// Resizes the visible panel around its current centre, animated to match the
+    /// tiles' own animation when a tile is closed.
+    func resize(to size: CGSize, duration: TimeInterval) {
+        guard isVisible else { return }
+        let m = Self.shadowMargin
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        let target = CGRect(x: (center.x - size.width / 2).rounded() - m, y: (center.y - size.height / 2).rounded() - m,
+                            width: size.width + 2 * m, height: size.height + 2 * m)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = duration
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            animator().setFrame(target, display: true)
+            chrome.animator().frame = CGRect(x: m, y: m, width: size.width, height: size.height)
+        }
     }
 
     /// Converts a screen point to the panel content's top-left-origin coordinates.
@@ -170,6 +188,7 @@ private final class MouseCatcher: NSView {
     var onMove: ((CGPoint) -> Void)?
     var onClick: ((CGPoint) -> Void)?
     var onDragHover: ((CGPoint?) -> Void)?
+    var onExit: (() -> Void)?
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -199,12 +218,16 @@ private final class MouseCatcher: NSView {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         trackingAreas.forEach(removeTrackingArea)
-        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeAlways, .inVisibleRect],
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect],
                                        owner: self, userInfo: nil))
     }
 
     override func mouseMoved(with event: NSEvent) {
         onMove?(convert(event.locationInWindow, from: nil))
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        onExit?()
     }
 
     override func mouseDown(with event: NSEvent) {

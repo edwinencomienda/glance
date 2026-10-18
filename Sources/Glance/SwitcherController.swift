@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import Carbon.HIToolbox
 
 @MainActor
@@ -17,12 +18,15 @@ final class SwitcherController {
         static let tab: Int64 = 48, escape: Int64 = 53, returnKey: Int64 = 36, enter: Int64 = 76
         static let left: Int64 = 123, right: Int64 = 124, down: Int64 = 125, up: Int64 = 126
         static let grave: Int64 = 50
+        static let w: Int64 = 13, q: Int64 = 12
     }
 
     private enum Action: UInt32 {
         case forward = 1, backward, cancel, commit, left, right, up, down
         /// Modifier + ` / ⇧`: only the frontmost app's windows.
         case appForward, appBackward
+        /// W closes the selected window, Q quits its app.
+        case closeWindow, quitApp
     }
 
     /// Input arrives from two paths: the event tap (full keyboard, but blind while
@@ -50,6 +54,8 @@ final class SwitcherController {
         (.right, kVK_RightArrow, 0),
         (.up, kVK_UpArrow, 0),
         (.down, kVK_DownArrow, 0),
+        (.closeWindow, kVK_ANSI_W, 0),
+        (.quitApp, kVK_ANSI_Q, 0),
     ]
 
     private let settings = Settings.shared
@@ -65,7 +71,8 @@ final class SwitcherController {
         model: model,
         onHover: { [weak self] in self?.hover(at: $0) },
         onClick: { [weak self] in self?.click(at: $0) },
-        onDragHover: { [weak self] in self?.dragHover(at: $0) }
+        onDragHover: { [weak self] in self?.dragHover(at: $0) },
+        onExit: { [weak self] in self?.mouseExited() }
     )
     private lazy var tap = HotkeyTap { type, event in
         MainActor.assumeIsolated { self.handle(type, event) }
@@ -86,6 +93,14 @@ final class SwitcherController {
     /// Opened with modifier + `: only the frontmost app's windows are listed.
     private var isAppMode = false
     private var screen: NSScreen?
+    /// What `open` built the layout from, so it can be rebuilt when tiles go away.
+    private var tileWidth: CGFloat = 0
+    /// Every window this switcher listed, in order, and those whose tiles were
+    /// closed but aren't confirmed gone yet.
+    private var sessionWindows: [WindowInfo] = []
+    private var hiddenIDs: Set<CGWindowID> = []
+    /// Bumped on every open, so late close checks can't touch a newer switcher.
+    private var sessionID = 0
     private var lastAction: (action: Action, source: Source, time: TimeInterval)?
 
     func start() -> Bool {
@@ -149,6 +164,8 @@ final class SwitcherController {
             case Key.right: perform(.right, from: .tap)
             case Key.up: perform(.up, from: .tap)
             case Key.down: perform(.down, from: .tap)
+            case Key.w: perform(.closeWindow, from: .tap)
+            case Key.q: perform(.quitApp, from: .tap)
             default: break
             }
             return true // swallow everything while the switcher is up
@@ -179,6 +196,8 @@ final class SwitcherController {
         case .right: step(1)
         case .up: step(-model.layout.columns)
         case .down: step(model.layout.columns)
+        case .closeWindow: if isActive && isShown { closeOrQuit(model.selected, quit: false) }
+        case .quitApp: if isActive && isShown { closeOrQuit(model.selected, quit: true) }
         }
     }
 
@@ -213,11 +232,12 @@ final class SwitcherController {
         self.screen = screen
         let iconsOnly = settings.displayStyle == .icons
         let baseWidth = iconsOnly ? settings.thumbnailSize.iconTileWidth : settings.thumbnailSize.width
-        let layout = SwitcherLayout.make(count: windows.count, in: screen.visibleFrame.size,
-                                         thumbWidth: (baseWidth * (appOnly ? Self.appModeTileScale : 1)).rounded(),
-                                         showTitles: settings.showTitles,
-                                         iconsOnly: iconsOnly)
+        tileWidth = (baseWidth * (appOnly ? Self.appModeTileScale : 1)).rounded()
+        let layout = makeLayout(count: windows.count, on: screen)
 
+        sessionID += 1
+        sessionWindows = windows
+        hiddenIDs = []
         model.windows = windows
         model.layout = layout
         model.thumbnails = iconsOnly ? [:] : thumbnails.cached(for: windows)
@@ -250,9 +270,17 @@ final class SwitcherController {
         modifierTimer = timer
     }
 
+    private func makeLayout(count: Int, on screen: NSScreen) -> SwitcherLayout {
+        SwitcherLayout.make(count: count, in: screen.visibleFrame.size, thumbWidth: tileWidth,
+                            showTitles: settings.showTitles, iconsOnly: settings.displayStyle == .icons)
+    }
+
     private func pollInputState() {
         guard isActive else { return }
-        let commandHeld = CGEventSource.flagsState(.combinedSessionState).contains(shortcut.eventFlag)
+        let flags = CGEventSource.flagsState(.combinedSessionState)
+        let commandHeld = flags.contains(shortcut.eventFlag)
+        let quitMode = flags.contains(shortcut.quitFlag)
+        if model.quitMode != quitMode { model.quitMode = quitMode }
         if isDragMode && !isShown {
             // Still in the quick-tap window: behave like a normal ⌘⇥.
             if !commandHeld {
@@ -310,6 +338,11 @@ final class SwitcherController {
         isDragMode = false
         isShown = false
         isAppMode = false
+        model.hovered = nil
+        model.buttonHot = false
+        model.quitMode = false
+        sessionWindows = []
+        hiddenIDs = []
         for (action, _, _) in Self.sessionHotkeys { hotkeys.unregister(id: action.rawValue) }
         panel.orderOut(nil)
     }
@@ -317,14 +350,107 @@ final class SwitcherController {
     // MARK: - Mouse
 
     private func hover(at point: CGPoint) {
-        guard isActive, let index = model.layout.index(at: point) else { return }
-        if model.selected != index { model.selected = index }
+        guard isActive, !isDragMode else { return }
+        let hit = model.layout.hit(at: point)
+        let hovered = hit?.index, hot = hit.map { if case .button = $0 { true } else { false } } ?? false
+        if model.hovered != hovered { model.hovered = hovered }
+        if model.buttonHot != hot { model.buttonHot = hot }
+        if let hovered, model.selected != hovered { model.selected = hovered }
+    }
+
+    private func mouseExited() {
+        model.hovered = nil
+        model.buttonHot = false
     }
 
     private func click(at point: CGPoint) {
-        guard isActive, let index = model.layout.index(at: point) else { return }
-        model.selected = index
-        commit()
+        guard isActive, let hit = model.layout.hit(at: point) else { return }
+        model.selected = hit.index
+        if case .button(let index) = hit {
+            closeOrQuit(index, quit: model.quitMode)
+        } else {
+            commit()
+        }
+    }
+
+    // MARK: - Close & quit
+
+    private static let closeAnimation = 0.2
+
+    /// Closes the window at `index`, or quits its app. The tile goes away straight
+    /// away and the switcher stays open, so you can close several in a row. If the
+    /// window turns out to still be open (no close button, a cancelled "Save
+    /// changes?", an app that refused to quit), its tile comes back.
+    private func closeOrQuit(_ index: Int, quit: Bool) {
+        guard model.windows.indices.contains(index) else { return }
+        let window = model.windows[index]
+        let session = sessionID
+        if quit {
+            guard WindowFocus.quit(pid: window.pid) else { NSSound.beep(); return }
+            let ids = Set(model.windows.filter { $0.pid == window.pid }.map(\.id))
+            hide(ids)
+            confirmGone(ids, session: session, checks: [0.5, 1.5, 4])
+        } else {
+            hide([window.id])
+            WindowFocus.close(window) { [weak self] pressed in
+                guard let self, self.isActive, self.sessionID == session else { return }
+                if pressed {
+                    self.confirmGone([window.id], session: session, checks: [0.5, 1.5, 3])
+                } else {
+                    NSSound.beep()
+                    self.unhide([window.id])
+                }
+            }
+        }
+    }
+
+    /// Re-lists windows after each delay. Uses the switcher's own window list, not
+    /// mere existence: many apps keep a closed window around off screen instead of
+    /// destroying it. Windows still listed at the last check get their tiles back.
+    private func confirmGone(_ ids: Set<CGWindowID>, session: Int, checks: [TimeInterval]) {
+        for (n, delay) in checks.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self, self.isActive, self.sessionID == session else { return }
+                let pending = ids.intersection(self.hiddenIDs)
+                guard !pending.isEmpty else { return }
+                let listed = WindowList.current(includeOtherSpaces: self.settings.spacesScope == .all,
+                                                excluding: Set(self.settings.excludedBundleIDs))
+                let still = pending.intersection(Set(listed.current.map(\.id)).union(listed.others.map(\.id)))
+                // Gone for good: forget them, so a later restore can't bring them back.
+                self.sessionWindows.removeAll { pending.subtracting(still).contains($0.id) }
+                self.hiddenIDs.subtract(pending.subtracting(still))
+                if n == checks.count - 1, !still.isEmpty { self.unhide(still) }
+            }
+        }
+    }
+
+    private func hide(_ ids: Set<CGWindowID>) {
+        hiddenIDs.formUnion(ids)
+        updateTiles()
+    }
+
+    private func unhide(_ ids: Set<CGWindowID>) {
+        hiddenIDs.subtract(ids)
+        updateTiles()
+    }
+
+    /// Shows `sessionWindows` minus the hidden ones, animating tiles out (or back
+    /// in) and the panel to its new size.
+    private func updateTiles() {
+        let visible = sessionWindows.filter { !hiddenIDs.contains($0.id) }
+        guard visible.map(\.id) != model.windows.map(\.id) else { return }
+        guard !visible.isEmpty, let screen else { close(); return }
+        let selectedID = model.windows.indices.contains(model.selected) ? model.windows[model.selected].id : nil
+        let layout = makeLayout(count: visible.count, on: screen)
+        withAnimation(.easeOut(duration: Self.closeAnimation)) {
+            model.windows = visible
+            model.layout = layout
+            model.selected = visible.firstIndex { $0.id == selectedID } ?? min(model.selected, visible.count - 1)
+            // Tiles moved; the next mouse move puts the button back under the pointer.
+            model.hovered = nil
+            model.buttonHot = false
+        }
+        if isShown { panel.resize(to: layout.panelSize, duration: Self.closeAnimation) }
     }
 
     // MARK: - Drag & drop (spring-loading)
