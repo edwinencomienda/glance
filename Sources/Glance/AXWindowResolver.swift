@@ -1,9 +1,6 @@
 import ApplicationServices
 import Foundation
 
-@_silgen_name("_AXUIElementGetWindow")
-func _AXUIElementGetWindow(_ element: AXUIElement, _ id: UnsafeMutablePointer<CGWindowID>) -> AXError
-
 /// Finds the Accessibility element for a `CGWindowID`.
 ///
 /// `kAXWindowsAttribute` only lists an app's windows on the current Space, so a
@@ -20,11 +17,20 @@ enum AXWindowResolver {
     private static let scanBudget: TimeInterval = 0.2
     private static let messagingTimeout: Float = 0.1
 
+    private static let handle = dlopen("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices", RTLD_LAZY)
+
     private typealias RemoteTokenFn = @convention(c) (CFData) -> Unmanaged<AXUIElement>?
     private static let createWithRemoteToken: RemoteTokenFn? = {
-        guard let h = dlopen("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices", RTLD_LAZY),
-              let p = dlsym(h, "_AXUIElementCreateWithRemoteToken") else { return nil }
+        guard let handle, let p = dlsym(handle, "_AXUIElementCreateWithRemoteToken") else { return nil }
         return unsafeBitCast(p, to: RemoteTokenFn.self)
+    }()
+
+    /// Without it no element can be matched to a window, so lookups return nil
+    /// and focusing falls back to activating the app.
+    private typealias GetWindowFn = @convention(c) (AXUIElement, UnsafeMutablePointer<CGWindowID>) -> AXError
+    private static let getWindow: GetWindowFn? = {
+        guard let handle, let p = dlsym(handle, "_AXUIElementGetWindow") else { return nil }
+        return unsafeBitCast(p, to: GetWindowFn.self)
     }()
 
     static func element(for window: WindowInfo) -> AXUIElement? {
@@ -43,8 +49,9 @@ enum AXWindowResolver {
     }
 
     private static func windowID(of element: AXUIElement) -> CGWindowID? {
+        guard let getWindow else { return nil }
         var id: CGWindowID = 0
-        return _AXUIElementGetWindow(element, &id) == .success ? id : nil
+        return getWindow(element, &id) == .success ? id : nil
     }
 
     private static func isWindow(_ element: AXUIElement) -> Bool {

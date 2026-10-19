@@ -111,8 +111,8 @@ After granting Screen Recording, quit and relaunch Glance; macOS applies it on l
   the app wasn't relaunched after granting.
 - **Stuck on the current Space after choosing a window:** switching Spaces depends on
   `AXWindowResolver` finding the window's AX element (remote-token scan for other
-  Spaces). Check that Accessibility is granted, and that
-  `_AXUIElementCreateWithRemoteToken` still resolves.
+  Spaces). Check that Accessibility is granted, and that `_AXUIElementGetWindow`
+  and `_AXUIElementCreateWithRemoteToken` still resolve.
 - **Wrong window focused:** focusing relies on private SkyLight symbols resolved via
   `dlsym` (`WindowFocus.swift`). If a macOS update removes them, it falls back to
   app-level `activate()`. Check `SkyLight.setFrontProcess != nil`.
@@ -123,7 +123,10 @@ After granting Screen Recording, quit and relaunch Glance; macOS applies it on l
 ## Testing
 
 `swift test` covers the pure logic in `SwitcherLayout` (grid sizing, row balancing,
-hit-testing), `WindowMRU` (ordering across Spaces) and `Displays` (which display a window is on). Everything that touches the WindowServer, Accessibility or
+hit-testing, the close button), `WindowMRU` (ordering across Spaces), `Displays`
+(which display a window is on), `WindowList` (popup and size filtering),
+`ThumbnailService` (cache pruning) and `AppVersion` (version parsing and
+comparison). Everything that touches the WindowServer, Accessibility or
 ScreenCaptureKit needs a manual check. Run this list before merging UI or input
 changes:
 

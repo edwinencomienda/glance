@@ -131,7 +131,7 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
   same-app switcher is on) and to
   focus a specific window. They're loaded at runtime, so if they're missing it
   falls back to public APIs instead of crashing. Native ⌘⇥ is restored on quit,
-  including on SIGTERM/SIGINT. After a hard crash (SIGKILL), relaunch Glance and
+  including on SIGTERM/SIGINT/SIGHUP. After a hard crash (SIGKILL), relaunch Glance and
   quit it, or log out, to get native ⌘⇥ back.
 
 ## License
