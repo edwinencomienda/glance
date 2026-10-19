@@ -7,6 +7,8 @@ for how releases are made.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-19
+
 ### Added
 
 - Close windows and quit apps from the switcher: hover a tile and click the ✕ in
@@ -93,7 +95,8 @@ The first release.
 - Menu bar icon and app icon (Icon Composer, full-size on macOS 26).
 - Clean panel that follows light and dark mode, with a soft shadow.
 
-[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/edwinencomienda/glance/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/edwinencomienda/glance/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/edwinencomienda/glance/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/edwinencomienda/glance/compare/v1.0.2...v1.0.3
