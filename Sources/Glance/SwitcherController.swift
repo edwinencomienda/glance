@@ -102,6 +102,7 @@ final class SwitcherController {
     /// Bumped on every open, so late close checks can't touch a newer switcher.
     private var sessionID = 0
     private var lastAction: (action: Action, source: Source, time: TimeInterval)?
+    private var nativeObservers: [NSObjectProtocol] = []
 
     func start() -> Bool {
         _ = panel // build the view hierarchy now, not on first ⌘⇥
@@ -112,7 +113,32 @@ final class SwitcherController {
             }
         }
         applyShortcut()
+        watchNativeSwitcher()
         return true
+    }
+
+    /// macOS can re-enable the native ⌘⇥ (seen on macOS 27), which only shows
+    /// under Secure Event Input, when our tap can't swallow the press. Re-check
+    /// on events that already happen, typically just before you focus a password
+    /// field: app activation, wake, a new login session and a Dock relaunch.
+    private func watchNativeSwitcher() {
+        let center = NSWorkspace.shared.notificationCenter
+        let names: [Notification.Name] = [
+            NSWorkspace.didActivateApplicationNotification,
+            NSWorkspace.didWakeNotification,
+            NSWorkspace.screensDidWakeNotification,
+            NSWorkspace.sessionDidBecomeActiveNotification,
+            NSWorkspace.didLaunchApplicationNotification,
+        ]
+        for name in names {
+            nativeObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { note in
+                if note.name == NSWorkspace.didLaunchApplicationNotification {
+                    let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                    guard app?.bundleIdentifier == "com.apple.dock" else { return }
+                }
+                MainActor.assumeIsolated { NativeSwitcher.reassert() }
+            })
+        }
     }
 
     /// Registers the trigger for the chosen shortcut. ⌘⇥ replaces the native
@@ -184,6 +210,10 @@ final class SwitcherController {
             return
         }
         lastAction = (action, source, now)
+        // A trigger the tap didn't see first means Secure Event Input is likely
+        // on, exactly when a re-enabled native switcher would also fire. Deferred
+        // so the check never delays opening the switcher.
+        if source == .hotkey, !isActive { DispatchQueue.main.async { NativeSwitcher.reassert() } }
 
         switch action {
         case .forward: isActive ? step(1) : open(reverse: false)

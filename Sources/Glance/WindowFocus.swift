@@ -15,6 +15,7 @@ enum SkyLight {
     typealias SetFrontFn = @convention(c) (UnsafeMutablePointer<ProcessSerialNumber>, CGWindowID, UInt32) -> CGError
     typealias PostEventFn = @convention(c) (UnsafeMutablePointer<ProcessSerialNumber>, UnsafeMutablePointer<UInt8>) -> CGError
     typealias SymbolicHotKeyFn = @convention(c) (Int32, Bool) -> CGError
+    typealias IsSymbolicHotKeyFn = @convention(c) (Int32) -> Bool
     typealias GetPSNFn = @convention(c) (pid_t, UnsafeMutablePointer<ProcessSerialNumber>) -> OSStatus
     typealias MainConnectionFn = @convention(c) () -> Int32
     typealias SpacesForWindowsFn = @convention(c) (Int32, Int32, CFArray) -> Unmanaged<CFArray>?
@@ -23,6 +24,7 @@ enum SkyLight {
     static let setFrontProcess = sym("_SLPSSetFrontProcessWithOptions", as: SetFrontFn.self)
     static let postEventRecord = sym("SLPSPostEventRecordTo", as: PostEventFn.self)
     static let setSymbolicHotKeyEnabled = sym("CGSSetSymbolicHotKeyEnabled", as: SymbolicHotKeyFn.self)
+    static let isSymbolicHotKeyEnabled = sym("CGSIsSymbolicHotKeyEnabled", as: IsSymbolicHotKeyFn.self)
     static let mainConnection = sym("CGSMainConnectionID", as: MainConnectionFn.self)
     static let copySpacesForWindows = sym("CGSCopySpacesForWindows", as: SpacesForWindowsFn.self)
     static let copyManagedDisplaySpaces = sym("CGSCopyManagedDisplaySpaces", as: ManagedDisplaySpacesFn.self)
@@ -35,19 +37,46 @@ enum SkyLight {
 }
 
 /// The native ⌘⇥ / ⌘⇧⇥ / ⌘` switcher hotkeys, which we disable while running.
+///
+/// macOS can turn them back on behind our back (seen on macOS 27). Normally the
+/// event tap swallows ⌘⇥ first, so nobody notices, but under Secure Event Input
+/// (a focused password field) the tap is blind and the native switcher wins.
+/// `reassert()` puts back the state we asked for; it's called on app activation,
+/// wake and Dock relaunch, never on the ⌘⇥ path or from a timer.
+@MainActor
 enum NativeSwitcher {
     private static let hotkeys: [Int32] = [1, 2] // commandTab, commandShiftTab
     private static let windowCycling: Int32 = 27 // ⌘`: move focus to the app's next window
 
+    /// The state we last asked for, keyed by symbolic hotkey id.
+    private static var wanted: [Int32: Bool] = [:]
+
     static func setEnabled(_ enabled: Bool) {
-        guard let fn = SkyLight.setSymbolicHotKeyEnabled else { return }
-        for key in hotkeys { _ = fn(key, enabled) }
+        for key in hotkeys { set(key, enabled) }
     }
 
     /// The native ⌘` window cycling, replaced by Glance's same-app switcher.
     static func setWindowCyclingEnabled(_ enabled: Bool) {
+        set(windowCycling, enabled)
+    }
+
+    /// Re-applies the wanted state to any hotkey macOS has flipped. Only hotkeys
+    /// we disabled are checked: restoring an enabled one is never urgent.
+    static func reassert() {
+        guard let setFn = SkyLight.setSymbolicHotKeyEnabled else { return }
+        for (key, enabled) in wanted where !enabled {
+            if let isFn = SkyLight.isSymbolicHotKeyEnabled {
+                guard isFn(key) else { continue }
+                NSLog("Glance: native symbolic hotkey \(key) was re-enabled by the system; disabling it again")
+            }
+            _ = setFn(key, false)
+        }
+    }
+
+    private static func set(_ key: Int32, _ enabled: Bool) {
+        wanted[key] = enabled
         guard let fn = SkyLight.setSymbolicHotKeyEnabled else { return }
-        _ = fn(windowCycling, enabled)
+        _ = fn(key, enabled)
     }
 }
 

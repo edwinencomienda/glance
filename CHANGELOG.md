@@ -7,6 +7,12 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Fixed
+
+- The native macOS switcher no longer shows up instead of Glance's when you press
+  ⌘⇥ in a password field. macOS (seen on macOS 27) could turn its own ⌘⇥ back on,
+  and Glance now turns it off again on app switches, wake and Dock restarts.
+
 ## [1.3.0] - 2026-10-19
 
 ### Added

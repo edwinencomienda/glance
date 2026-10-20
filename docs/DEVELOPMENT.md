@@ -106,7 +106,10 @@ After granting Screen Recording, quit and relaunch Glance; macOS applies it on l
   ⌘⇥ there comes through `GlobalHotkeys` instead. Check for "failed to register
   hotkey" in the logs. Another app that already owns ⌘⇥ as a registered hotkey
   would block it. `ioreg -l -w 0 | grep SecureInput` shows which process has
-  secure input enabled.
+  secure input enabled. If the **native** switcher shows up there instead, macOS
+  re-enabled its ⌘⇥ symbolic hotkey (seen on macOS 27). Glance turns it off again on
+  app activation, wake and Dock relaunch, and logs `native symbolic hotkey … was
+  re-enabled` when it does: `log stream --predicate 'process == "Glance"'`.
 - **Thumbnails missing / titles show the app name:** Screen Recording isn't granted, or
   the app wasn't relaunched after granting.
 - **Stuck on the current Space after choosing a window:** switching Spaces depends on
