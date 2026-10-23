@@ -7,6 +7,15 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Changed
+
+- The selected tile in the switcher now has a blue border as well as the grey fill.
+
+### Fixed
+
+- Moving the selection with the keyboard now hides the close button on the tile
+  under the pointer; it comes back when you move the mouse.
+
 ## [1.3.1] - 2026-10-20
 
 ### Fixed

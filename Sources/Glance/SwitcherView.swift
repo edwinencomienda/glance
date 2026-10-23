@@ -72,10 +72,17 @@ struct TileView: View, Equatable {
             }
         }
         .padding(SwitcherLayout.tileInset)
-        // Filled highlight, no outline: thin strokes smear on non-Retina displays.
+        // Filled highlight plus a thick blue border (thin strokes smear on non-Retina).
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(.primary.opacity(selected ? 0.11 : 0))
+        }
+        .overlay {
+            // Blue border on the selected tile, alongside the grey fill.
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Brand.blue, lineWidth: 2.5)
+                .opacity(selected ? 1 : 0)
+                .animation(.easeOut(duration: 0.12), value: selected)
         }
         .overlay(alignment: .topTrailing) {
             if let button {

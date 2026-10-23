@@ -343,6 +343,10 @@ final class SwitcherController {
         let n = model.windows.count
         guard n > 0 else { return }
         model.selected = ((model.selected + delta) % n + n) % n
+        // The keyboard took over: drop the hover (and its close button) until the
+        // pointer moves again.
+        model.hovered = nil
+        model.buttonHot = false
     }
 
     private func commit() {
