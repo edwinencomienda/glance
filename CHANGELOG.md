@@ -7,6 +7,16 @@ for how releases are made.
 
 ## [Unreleased]
 
+### Added
+
+- Chrome and Microsoft Edge window tiles show a single-line profile-name badge when available.
+
+- Settings → Appearance: choose a small, medium or large app icon on window thumbnails.
+- Hidden apps (⌘H) and apps whose windows are all minimized or closed now appear in
+  the switcher as an app icon tile. Choosing one unhides the app, or reopens it the
+  way a Dock click does, which brings back a minimized window. Turn it off in
+  Settings → Switcher.
+
 ### Changed
 
 - The selected tile in the switcher now has a blue border as well as the grey fill.

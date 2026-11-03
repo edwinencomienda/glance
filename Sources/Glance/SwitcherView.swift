@@ -13,12 +13,15 @@ struct SwitcherView: View {
                     TileView(
                         window: window,
                         image: model.thumbnails[window.id],
+                        profile: model.browserProfiles[window.id],
                         thumbSize: layout.thumbSize,
+                        badgeSize: layout.badgeIconSize,
                         titleHeight: layout.titleHeight,
                         iconsOnly: layout.iconsOnly,
                         selected: index == model.selected,
                         button: model.hovered == index
-                            ? TileButton(hot: model.buttonHot, quit: model.quitMode) : nil
+                            // An app tile has no window to close: its button quits.
+                            ? TileButton(hot: model.buttonHot, quit: model.quitMode || window.isApp) : nil
                     )
                     .equatable()
                     .position(x: frame.midX, y: frame.midY)
@@ -33,7 +36,10 @@ struct SwitcherView: View {
 struct TileView: View, Equatable {
     let window: WindowInfo
     let image: CGImage?
+    let profile: String?
     let thumbSize: CGSize
+    /// Side of the app icon badge on the thumbnail's corner.
+    let badgeSize: CGFloat
     let titleHeight: CGFloat
     let iconsOnly: Bool
     let selected: Bool
@@ -41,22 +47,36 @@ struct TileView: View, Equatable {
     let button: TileButton?
 
     static func == (a: TileView, b: TileView) -> Bool {
-        a.window == b.window && a.image === b.image && a.thumbSize == b.thumbSize
+        a.window == b.window && a.image === b.image && a.profile == b.profile && a.thumbSize == b.thumbSize
+            && a.badgeSize == b.badgeSize
             && a.titleHeight == b.titleHeight && a.iconsOnly == b.iconsOnly && a.selected == b.selected
             && a.button == b.button
     }
-
-    private var iconSize: CGFloat { max(22, min(32, thumbSize.width * 0.14)) }
 
     var body: some View {
         VStack(spacing: 0) {
             thumbnail
                 .frame(width: thumbSize.width, height: thumbSize.height)
+                .overlay(alignment: .bottomTrailing) {
+                    if let profile {
+                        Text(profile)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.9), in: RoundedRectangle(cornerRadius: 7))
+                            .frame(maxWidth: thumbSize.width * 0.78, alignment: .trailing)
+                            .padding(4)
+                            .help(profile)
+                    }
+                }
                 .overlay(alignment: .bottomLeading) {
                     if !iconsOnly, image != nil, let icon = window.icon {
                         Image(nsImage: icon)
                             .resizable()
-                            .frame(width: iconSize, height: iconSize)
+                            .frame(width: badgeSize, height: badgeSize)
                             .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
                             .offset(x: -4, y: 6)
                     }
@@ -100,6 +120,20 @@ struct TileView: View, Equatable {
                     .frame(width: thumbSize.height, height: thumbSize.height)
                     .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
             }
+        } else if window.isApp {
+            // No window to capture: the app's icon on a dashed outline, so it reads
+            // as "the app" rather than a thumbnail still loading.
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(.primary.opacity(0.18), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                .overlay {
+                    if let icon = window.icon {
+                        Image(nsImage: icon)
+                            .resizable()
+                            .interpolation(.high)
+                            .frame(width: thumbSize.height * 0.6, height: thumbSize.height * 0.6)
+                            .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                    }
+                }
         } else if let image {
             Image(decorative: image, scale: 2)
                 .resizable()

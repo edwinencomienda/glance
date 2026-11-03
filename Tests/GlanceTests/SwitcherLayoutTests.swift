@@ -88,4 +88,14 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertEqual(layout.hit(at: CGPoint(x: tile.minX + 5, y: tile.minY + 5)), .tile(2), "top-left is the tile")
         XCTAssertNil(layout.hit(at: CGPoint(x: 1, y: 1)))
     }
+
+    func testBadgeIconSizeScalesAndKeepsMediumDefault() {
+        var layout = SwitcherLayout.make(count: 3, in: CGSize(width: 1920, height: 1080))
+        let medium = layout.badgeIconSize
+        XCTAssertEqual(medium, 32)  // 232 * 0.14 clamps to 32, as before the setting
+        layout.badgeScale = 0.75
+        XCTAssertLessThan(layout.badgeIconSize, medium)
+        layout.badgeScale = 1.4
+        XCTAssertGreaterThan(layout.badgeIconSize, medium)
+    }
 }

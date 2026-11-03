@@ -90,6 +90,21 @@ final class Settings {
         }
     }
 
+    /// Size of the app icon badge on the corner of a window thumbnail.
+    enum AppIconSize: String, CaseIterable, Identifiable {
+        case small, medium, large
+        var id: String { rawValue }
+        var label: String { rawValue.capitalized }
+        /// Multiplier on the default badge size (medium keeps the original look).
+        var scale: CGFloat {
+            switch self {
+            case .small: 0.75
+            case .medium: 1
+            case .large: 1.4
+            }
+        }
+    }
+
     enum Change { case shortcut, menuBarIcon, theme }
 
     @ObservationIgnored var onChange: ((Change) -> Void)?
@@ -115,6 +130,11 @@ final class Settings {
     var currentDisplayOnly: Bool {
         didSet { save(currentDisplayOnly, "currentDisplayOnly") }
     }
+    /// List running apps with no window to show (hidden, or every window minimized
+    /// or closed) as app tiles; choosing one brings the app back.
+    var showWindowlessApps: Bool {
+        didSet { save(showWindowlessApps, "showWindowlessApps") }
+    }
     /// Delay before the panel appears, in milliseconds. A quick tap within this
     /// window switches without drawing anything.
     var showDelayMs: Double {
@@ -128,6 +148,9 @@ final class Settings {
     }
     var thumbnailSize: ThumbnailSize {
         didSet { save(thumbnailSize.rawValue, "thumbnailSize") }
+    }
+    var appIconSize: AppIconSize {
+        didSet { save(appIconSize.rawValue, "appIconSize") }
     }
     var showTitles: Bool {
         didSet { save(showTitles, "showTitles") }
@@ -151,11 +174,13 @@ final class Settings {
         spacesScope = d.string(forKey: "spacesScope").flatMap(SpacesScope.init) ?? .all
         panelDisplay = d.string(forKey: "panelDisplay").flatMap(PanelDisplay.init) ?? .pointer
         currentDisplayOnly = d.object(forKey: "currentDisplayOnly") as? Bool ?? false
+        showWindowlessApps = d.object(forKey: "showWindowlessApps") as? Bool ?? true
         let delay = d.object(forKey: "showDelayMs") as? Double ?? 70
         showDelayMs = min(max(delay, Self.showDelayRange.lowerBound), Self.showDelayRange.upperBound)
         theme = d.string(forKey: "theme").flatMap(Theme.init) ?? .system
         displayStyle = d.string(forKey: "displayStyle").flatMap(DisplayStyle.init) ?? .thumbnails
         thumbnailSize = d.string(forKey: "thumbnailSize").flatMap(ThumbnailSize.init) ?? .medium
+        appIconSize = d.string(forKey: "appIconSize").flatMap(AppIconSize.init) ?? .medium
         showTitles = d.object(forKey: "showTitles") as? Bool ?? true
         excludedBundleIDs = d.stringArray(forKey: "excludedBundleIDs") ?? []
         checkForUpdates = d.object(forKey: "checkForUpdates") as? Bool ?? true

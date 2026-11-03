@@ -7,8 +7,14 @@ struct WindowInfo: Identifiable, Equatable {
     let appName: String
     let bounds: CGRect
     let icon: NSImage?
+    /// A running app with nothing to list: it's hidden (⌘H), or all its windows
+    /// are minimized or closed. Choosing it brings the app back.
+    var isApp = false
 
     static func == (a: WindowInfo, b: WindowInfo) -> Bool { a.id == b.id && a.title == b.title }
+
+    /// Window ids are small counters, so the top bit keeps app tiles' ids apart.
+    static func appID(_ pid: pid_t) -> CGWindowID { 0x8000_0000 | CGWindowID(truncatingIfNeeded: pid) }
 }
 
 enum WindowList {
@@ -18,11 +24,14 @@ enum WindowList {
     /// Spaces (front-to-back z-order) and windows on other Spaces, including
     /// full-screen ones. Two CGWindowList calls plus a cheap Space lookup per
     /// candidate; no per-app Accessibility IPC.
-    static func current(includeOtherSpaces: Bool = true,
-                        excluding excluded: Set<String> = []) -> (current: [WindowInfo], others: [WindowInfo]) {
+    /// `apps` (when `includeApps`) has one tile per regular app with no window on
+    /// any Space: hidden apps (their windows aren't listed) and apps whose windows
+    /// are all minimized or closed, which the window server alone can't tell apart.
+    static func current(includeOtherSpaces: Bool = true, includeApps: Bool = false,
+                        excluding excluded: Set<String> = []) -> (current: [WindowInfo], others: [WindowInfo], apps: [WindowInfo]) {
         guard let raw = CGWindowListCopyWindowInfo(
             [.optionAll, .excludeDesktopElements], kCGNullWindowID
-        ) as? [[CFString: Any]] else { return ([], []) }
+        ) as? [[CFString: Any]] else { return ([], [], []) }
 
         // `.optionAll` finds windows on every Space but returns them in a fixed
         // order, not z-order. The on-screen list is front-to-back, so use it to
@@ -48,6 +57,8 @@ enum WindowList {
         // Titled window frames per app, and untitled windows, for the popup filter below.
         var titledFrames: [pid_t: [CGRect]] = [:]
         var untitled: Set<CGWindowID> = []
+        // Apps with a window on some Space, listed or not (scope, display).
+        var withWindows: Set<pid_t> = []
 
         for info in raw {
             guard (info[kCGWindowLayer] as? Int) == 0,
@@ -55,6 +66,8 @@ enum WindowList {
                   // Glance is a regular app); the switcher panel isn't layer 0.
                   let pid = info[kCGWindowOwnerPID] as? pid_t,
                   let app = apps[pid],
+                  // A hidden app gets one app tile instead (choosing it unhides it).
+                  !app.isHidden,
                   let id = info[kCGWindowNumber] as? CGWindowID,
                   (info[kCGWindowAlpha] as? Double ?? 1) > 0.01,
                   let boundsDict = info[kCGWindowBounds] as? NSDictionary,
@@ -69,6 +82,7 @@ enum WindowList {
                 // No Space: helper, minimized or inactive-tab window.
                 guard !spaces.isEmpty else { continue }
                 isCurrent = !spaceLayout.visible.isDisjoint(with: spaces)
+                if !isCurrent || onScreen { withWindows.insert(pid) }
                 if !isCurrent && !includeOtherSpaces { continue }
                 if let fullScreen = spaces.first(where: spaceLayout.fullScreen.contains) {
                     fullScreenSpaceOf[id] = fullScreen
@@ -79,6 +93,7 @@ enum WindowList {
                 // Space lookup unavailable: current Space only.
                 guard onScreen else { continue }
                 isCurrent = true
+                withWindows.insert(pid)
             }
 
             let appName = app.localizedName ?? (info[kCGWindowOwnerName] as? String) ?? ""
@@ -117,7 +132,21 @@ enum WindowList {
         }
 
         current.sort { (zIndex[$0.id] ?? .max) < (zIndex[$1.id] ?? .max) }
-        return (current, others)
+
+        var appTiles: [WindowInfo] = []
+        if includeApps {
+            let ownPID = ProcessInfo.processInfo.processIdentifier
+            for (pid, app) in apps where pid != ownPID && !withWindows.contains(pid) {
+                let name = app.localizedName ?? ""
+                var tile = WindowInfo(id: WindowInfo.appID(pid), pid: pid, title: name, appName: name,
+                                      bounds: .zero, icon: icon(for: app))
+                tile.isApp = true
+                appTiles.append(tile)
+            }
+            // `apps` is a dictionary: give the tiles a stable base order.
+            appTiles.sort { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        }
+        return (current, others, appTiles)
     }
 
     /// Untitled windows under 100×100 are helpers and strips. A title marks a real

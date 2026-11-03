@@ -5,6 +5,7 @@ import Observation
 final class SwitcherModel {
     var windows: [WindowInfo] = []
     var thumbnails: [CGWindowID: CGImage] = [:]
+    var browserProfiles: [CGWindowID: String] = [:]
     var selected = 0
     var layout = SwitcherLayout.empty
     /// The tile under the pointer, which shows the close (or quit) button.
@@ -39,6 +40,8 @@ struct SwitcherLayout: Equatable {
     var titleHeight: CGFloat = defaultTitleHeight
     /// App icons instead of window thumbnails; `thumbSize.height` is the icon size.
     var iconsOnly = false
+    /// Multiplier for the app icon badge on thumbnails (`Settings.AppIconSize.scale`).
+    var badgeScale: CGFloat = 1
     var columns: Int
     var rows: Int
     var count: Int
@@ -83,6 +86,12 @@ struct SwitcherLayout: Equatable {
             if layout.panelSize.height <= maxH || thumbW <= minWidth { return layout }
             thumbW = (thumbW * 0.88).rounded()
         }
+    }
+
+    /// Side of the app icon badge on a thumbnail: about 14% of its width, kept
+    /// within 22–32 pt, then scaled by the user's icon size choice.
+    var badgeIconSize: CGFloat {
+        (max(22, min(32, thumbSize.width * 0.14)) * badgeScale).rounded()
     }
 
     static let buttonSize: CGFloat = 20

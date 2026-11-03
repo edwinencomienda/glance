@@ -89,6 +89,10 @@ enum WindowFocus {
     /// Brings a specific window to front, switching Spaces if it lives on another
     /// one. Runs off the main thread so a hung app can never stall the switcher UI.
     static func focus(_ window: WindowInfo) {
+        if window.isApp {
+            DispatchQueue.main.async { MainActor.assumeIsolated { restore(pid: window.pid) } }
+            return
+        }
         if window.pid == ProcessInfo.processInfo.processIdentifier {
             DispatchQueue.main.async {
                 NSApp.activate()
@@ -138,6 +142,27 @@ enum WindowFocus {
                 }
             }
             DispatchQueue.main.async { MainActor.assumeIsolated { done(pressed) } }
+        }
+    }
+
+    /// Brings back an app that has no window to show, as the Dock would. A hidden
+    /// app is unhidden and activated. Otherwise it's opened again through Launch
+    /// Services, which sends a running app the same "reopen" event as a click on
+    /// its Dock icon: apps restore a minimized window, or open a new one if they
+    /// have none. Public APIs only; no Accessibility calls.
+    @MainActor
+    static func restore(pid: pid_t) {
+        guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else { return }
+        if app.isHidden {
+            app.unhide()
+            app.activate()
+            return
+        }
+        guard let url = app.bundleURL else { app.activate(); return }
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.openApplication(at: url, configuration: config) { _, error in
+            if error != nil { DispatchQueue.main.async { app.activate() } }
         }
     }
 

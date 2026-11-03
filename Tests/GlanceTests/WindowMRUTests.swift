@@ -38,4 +38,34 @@ final class WindowMRUTests: XCTestCase {
         let order = mru.order(current: [window(99)], others: [window(2), window(1), window(5)])
         XCTAssertEqual(order.map(\.id), [99, 1, 2, 5])
     }
+
+    private func app(_ pid: pid_t) -> WindowInfo {
+        var tile = WindowInfo(id: WindowInfo.appID(pid), pid: pid, title: "app \(pid)", appName: "App",
+                              bounds: .zero, icon: nil)
+        tile.isApp = true
+        return tile
+    }
+
+    func testAppTilesFollowRecencyAndUnseenOnesGoLast() {
+        // App 20 (now hidden) was used after window 7 on another Space; app 30 never was.
+        let mru = WindowMRU()
+        mru.touch(7)
+        mru.touchApp(20)
+        let order = mru.order(current: [window(1)], others: [window(7)], apps: [app(30), app(20)])
+        XCTAssertEqual(order.map(\.id), [1, WindowInfo.appID(20), 7, WindowInfo.appID(30)])
+    }
+
+    func testAppStampSurvivesWhileItsTileIsntListed() {
+        // An app's stamp must outlive orders where it has windows (no app tile).
+        let mru = WindowMRU()
+        mru.touchApp(20)
+        _ = mru.order(current: [window(1)], others: [])
+        let order = mru.order(current: [window(1)], others: [window(7)], apps: [app(20)])
+        XCTAssertEqual(order.map(\.id), [1, WindowInfo.appID(20), 7])
+    }
+
+    func testAppIDsDontCollideWithWindowIDs() {
+        XCTAssertGreaterThanOrEqual(WindowInfo.appID(1), 0x8000_0000)
+        XCTAssertNotEqual(WindowInfo.appID(1), WindowInfo.appID(2))
+    }
 }

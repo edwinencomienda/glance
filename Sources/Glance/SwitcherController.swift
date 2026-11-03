@@ -65,6 +65,7 @@ final class SwitcherController {
 
     private let model = SwitcherModel()
     private let thumbnails = ThumbnailService()
+    private let browserProfiles = BrowserProfiles()
     private let hotkeys = GlobalHotkeys()
     private let mru = WindowMRU()
     private lazy var panel = SwitcherPanel(
@@ -235,6 +236,7 @@ final class SwitcherController {
 
     private func open(reverse: Bool, appOnly: Bool = false) {
         var listed = WindowList.current(includeOtherSpaces: settings.spacesScope == .all,
+                                        includeApps: settings.showWindowlessApps,
                                         excluding: Set(settings.excludedBundleIDs))
         // NSWorkspace keeps this up to date itself; reading it is no IPC.
         let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
@@ -246,14 +248,16 @@ final class SwitcherController {
             guard let frontPID else { return }
             listed.current.removeAll { $0.pid != frontPID }
             listed.others.removeAll { $0.pid != frontPID }
+            listed.apps.removeAll { $0.pid != frontPID }
         }
-        var windows = mru.order(current: listed.current, others: listed.others)
+        var windows = mru.order(current: listed.current, others: listed.others, apps: listed.apps)
 
         let screens = NSScreen.screens
         let frames = screens.map(\.frame)
         let screen = panelScreen(screens: screens, frames: frames, current: listed.current, frontPID: frontPID)
         if settings.currentDisplayOnly, screens.count > 1, let index = screens.firstIndex(of: screen) {
-            windows.removeAll { Displays.screenIndex(for: $0.bounds, in: frames) != index }
+            // App tiles have no frame, so they show on every display.
+            windows.removeAll { !$0.isApp && Displays.screenIndex(for: $0.bounds, in: frames) != index }
         }
         guard !windows.isEmpty else { return }
         isActive = true
@@ -269,6 +273,7 @@ final class SwitcherController {
         sessionWindows = windows
         hiddenIDs = []
         model.windows = windows
+        model.browserProfiles = browserProfiles.cached(for: windows, live: live)
         model.layout = layout
         model.thumbnails = iconsOnly ? [:] : thumbnails.cached(for: windows)
         model.selected = windows.count > 1 ? (reverse ? windows.count - 1 : 1) : 0
@@ -277,9 +282,9 @@ final class SwitcherController {
         let otherIDs = Set(listed.others.map(\.id))
         WindowFocus.prefetch(windows.filter { otherIDs.contains($0.id) }, live: live)
 
-        // Icon mode captures nothing at all.
+        // Icon mode does not capture window thumbnails.
         if !iconsOnly {
-            thumbnails.refresh(windows, live: live, maxSize: layout.thumbSize, scale: screen.backingScaleFactor) { [weak self] id, image in
+            thumbnails.refresh(windows.filter { !$0.isApp }, live: live, maxSize: layout.thumbSize, scale: screen.backingScaleFactor) { [weak self] id, image in
                 self?.model.thumbnails[id] = image
             }
         }
@@ -301,8 +306,10 @@ final class SwitcherController {
     }
 
     private func makeLayout(count: Int, on screen: NSScreen) -> SwitcherLayout {
-        SwitcherLayout.make(count: count, in: screen.visibleFrame.size, thumbWidth: tileWidth,
-                            showTitles: settings.showTitles, iconsOnly: settings.displayStyle == .icons)
+        var layout = SwitcherLayout.make(count: count, in: screen.visibleFrame.size, thumbWidth: tileWidth,
+                                         showTitles: settings.showTitles, iconsOnly: settings.displayStyle == .icons)
+        layout.badgeScale = settings.appIconSize.scale
+        return layout
     }
 
     private func pollInputState() {
@@ -333,6 +340,12 @@ final class SwitcherController {
         guard isActive, let screen else { return }
         isShown = true
         panel.show(size: model.layout.panelSize, on: screen)
+        let session = sessionID
+        browserProfiles.refresh(model.windows) { [weak self] id, name in
+            guard let self, self.isActive, self.sessionID == session,
+                  self.model.windows.contains(where: { $0.id == id }) else { return }
+            self.model.browserProfiles[id] = name
+        }
         // Registered here rather than in open() so a quick tap never pays for them.
         for (action, key, mods) in Self.sessionHotkeys {
             hotkeys.register(id: action.rawValue, keyCode: key, modifiers: mods | shortcut.carbonModifier)
@@ -354,13 +367,14 @@ final class SwitcherController {
         let target = model.windows.indices.contains(model.selected) ? model.windows[model.selected] : nil
         close()
         if let target {
-            mru.touch(target.id)
+            mru.touch(target)
             WindowFocus.focus(target)
         }
     }
 
     private func close() {
         isActive = false
+        browserProfiles.cancel()
         showTimer?.invalidate()
         showTimer = nil
         modifierTimer?.invalidate()
@@ -401,7 +415,7 @@ final class SwitcherController {
         guard isActive, let hit = model.layout.hit(at: point) else { return }
         model.selected = hit.index
         if case .button(let index) = hit {
-            closeOrQuit(index, quit: model.quitMode)
+            closeOrQuit(index, quit: model.quitMode || model.windows[index].isApp)
         } else {
             commit()
         }
@@ -419,6 +433,8 @@ final class SwitcherController {
         guard model.windows.indices.contains(index) else { return }
         let window = model.windows[index]
         let session = sessionID
+        // An app tile has no window to close; only quitting applies.
+        if window.isApp && !quit { NSSound.beep(); return }
         if quit {
             guard WindowFocus.quit(pid: window.pid) else { NSSound.beep(); return }
             let ids = Set(model.windows.filter { $0.pid == window.pid }.map(\.id))
@@ -448,8 +464,9 @@ final class SwitcherController {
                 let pending = ids.intersection(self.hiddenIDs)
                 guard !pending.isEmpty else { return }
                 let listed = WindowList.current(includeOtherSpaces: self.settings.spacesScope == .all,
+                                                includeApps: self.settings.showWindowlessApps,
                                                 excluding: Set(self.settings.excludedBundleIDs))
-                let still = pending.intersection(Set(listed.current.map(\.id)).union(listed.others.map(\.id)))
+                let still = pending.intersection(Set((listed.current + listed.others + listed.apps).map(\.id)))
                 // Gone for good: forget them, so a later restore can't bring them back.
                 self.sessionWindows.removeAll { pending.subtracting(still).contains($0.id) }
                 self.hiddenIDs.subtract(pending.subtracting(still))

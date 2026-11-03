@@ -213,6 +213,8 @@ struct SettingsView: View {
                     }
                 }
             }
+            ToggleRow("Show hidden and minimized apps", isOn: $settings.showWindowlessApps)
+            Note("Apps that are hidden, or whose windows are all minimized or closed, appear as an app icon. Choose one to bring it back.")
             Divider()
             HStack(spacing: tileSpacing) {
                 ForEach(Settings.PanelDisplay.allCases) { display in
@@ -291,6 +293,21 @@ struct SettingsView: View {
                             }
                             .frame(height: 30)
                             Text(size.label).font(.system(size: 11, weight: .medium))
+                        }
+                    }
+                }
+            }
+            if settings.displayStyle == .thumbnails {
+                HStack(spacing: tileSpacing) {
+                    ForEach(Settings.AppIconSize.allCases) { size in
+                        ChoiceTile(selected: settings.appIconSize == size, compact: true) {
+                            settings.appIconSize = size
+                        } content: {
+                            HStack(spacing: 8) {
+                                IconGlyph(size: 16 * size.scale)
+                                    .frame(width: 24, height: 24)
+                                Text("\(size.label) icon").font(.system(size: 11, weight: .medium))
+                            }
                         }
                     }
                 }

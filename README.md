@@ -36,6 +36,7 @@ See [docs/FEATURES.md](docs/FEATURES.md) for the full feature list.
 | Mouse | Hover to select, click to switch |
 | ✕ on a tile | Hover a tile and click the ✕ in its corner to close that window; hold `⌥` (`⌘` with `⌥⇥`) and it quits the app instead. The switcher stays open |
 | `W` / `Q` | While the switcher is open: close the selected window / quit its app |
+| App icon tile | An app that's hidden (⌘H), or whose windows are all minimized or closed. Choosing it unhides the app, or reopens it like a Dock click (which restores a minimized window). Its corner button quits the app |
 | Drag + `⌘⇥` | While dragging a file, text or image: a quick tap switches to the previous window and the drag continues into it. Hold `⌘` until the panel appears and it stays open; release `⌘`, then hover the drag over a window for a moment (or drop on it) to bring that window forward, then drop into it. Nothing switches while `⌘` is still held |
 
 Glance lives in the menu bar (no Dock icon). Its menu has **Settings…** (⌘,),
@@ -48,8 +49,8 @@ missing and a **Glance X.Y.Z Available…** item when there's a newer release.
 | --- | --- |
 | General | Launch at login · Show icon in menu bar |
 | Shortcut | `⌘⇥` (replaces the macOS app switcher) or `⌥⇥` (keeps it) · Switch between the current app's windows with `` ⌘` `` (or `` ⌥` `` with `⌥⇥`; off by default). With `⌘⇥` it replaces the macOS `` ⌘` `` window cycling; with `⌥⇥`, `` ⌥` `` no longer types a grave accent while it's on |
-| Switcher | Show windows from all Spaces or the current Space only · Show the panel on the pointer's display or the active window's display · Only show windows on that display · Panel delay (0–300 ms; a quick tap within it switches without showing the panel) |
-| Appearance | Theme (System / Light / Dark, for the switcher and Settings) · Show as window thumbnails or app icons (one tile per window either way) · Size (small / medium / large) · Show window titles |
+| Switcher | Show windows from all Spaces or the current Space only · Show hidden and minimized apps (on by default) · Show the panel on the pointer's display or the active window's display · Only show windows on that display · Panel delay (0–300 ms; a quick tap within it switches without showing the panel) |
+| Appearance | Theme (System / Light / Dark, for the switcher and Settings) · Show as window thumbnails or app icons (one tile per window either way) · Size (small / medium / large) · App icon size on thumbnails (small / medium / large) · Show window titles |
 | Excluded Apps | Apps whose windows never appear in the switcher |
 | Permissions | Accessibility and Screen Recording status, with shortcuts to fix them |
 | Updates | Check for updates automatically (on by default) · Check Now / Download |
@@ -110,6 +111,9 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
 - **Window list**: two `CGWindowListCopyWindowInfo` calls plus a cheap Space
   lookup per window, about 5 ms for every window on every Space. Windows are
   ordered most recently used first. No per-app Accessibility IPC on open.
+- **Browser profiles**: Chrome and Microsoft Edge tiles show a profile-name badge
+  when the browser exposes a label. Badges stay on one line and omit Edge’s “Profile”
+  suffix. Labels are resolved asynchronously after the panel appears.
 - **Delayed panel**: the panel appears after 70 ms, so a quick tap never draws.
 - **Thumbnails**: captured in parallel with ScreenCaptureKit, at the exact pixel
   size shown. Cached per window, so the panel opens with the last frame and
@@ -125,8 +129,9 @@ falls back to ad-hoc signing, and you'll need to re-grant after each rebuild. Se
 - In secure text fields (e.g. password inputs), macOS hides keystrokes from apps.
   ⌘⇥, ⌘⇧⇥ and ⇥-cycling still work, and so do ⌘+Esc / ⌘+↩ / ⌘+arrows while ⌘ is
   held. Glance never reads what you type.
-- Lists windows on every Space, including full-screen apps. Minimized windows,
-  hidden apps (⌘H) and inactive native tabs aren't listed.
+- Lists windows on every Space, including full-screen apps. Minimized windows and
+  hidden apps (⌘H) aren't listed one by one: each such app gets a single app
+  tile instead. Inactive native tabs aren't listed.
 - Uses private SkyLight APIs to disable the native ⌘⇥ (and ⌘`, when the
   same-app switcher is on) and to
   focus a specific window. They're loaded at runtime, so if they're missing it

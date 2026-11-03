@@ -148,7 +148,15 @@ changes:
 - [ ] In drag mode, hovering a tile while still holding ⌘ only highlights it; it switches
       right after ⌘ is released
 - [ ] Dropping a drag on a tile focuses that window; ending the drag outside the panel closes it
+- [ ] Chrome and Edge: open windows in different profiles and confirm each profile-name
+      badge is readable, stays on one line without Edge’s “Profile” suffix, and matches
+      its window in thumbnail and app-icon modes; check
+      long names, private windows, other Spaces and quick switching
 - [ ] Thumbnails appear and update; placeholder icons show before the first capture
+- [ ] Hide an app (⌘H): it shows as an app icon tile (dashed outline); choosing it
+      unhides the app. Minimize every window of an app: choosing its tile restores
+      one. Its corner button quits the app; W beeps. Settings → Switcher → "Show
+      hidden and minimized apps" off removes these tiles
 - [ ] From a full-screen app (e.g. a full-screen video): ⌘⇥ lists windows from the
       desktop and other Spaces, a quick tap returns to the previous window, and
       choosing a window on another Space switches to that Space

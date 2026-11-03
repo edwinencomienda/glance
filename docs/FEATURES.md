@@ -36,6 +36,7 @@ added each feature ("Unreleased" means it's on `main` but not released yet). See
 | **Browser popups hidden**, such as address-bar suggestion dropdowns | 1.0.1 |
 | **Short titled windows listed**, such as Finder's "Emptying the Trash…" progress window | 1.0.3 |
 | **Settings window listed** in ⌘⇥ while it's open | 1.0.0 |
+| **Hidden and minimized apps**: an app that's hidden, or whose windows are all minimized or closed, gets an app icon tile; choosing it brings the app back like a Dock click | Unreleased |
 
 ## Multiple displays
 
