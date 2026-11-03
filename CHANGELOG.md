@@ -9,7 +9,7 @@ for how releases are made.
 
 ### Added
 
-- Chrome and Microsoft Edge window tiles show a single-line profile-name badge when available.
+- Chrome and Microsoft Edge window tiles show a white, single-line profile-name badge centered on the bottom border at the right when available.
 
 - Settings → Appearance: choose a small, medium or large app icon on window thumbnails.
 - Hidden apps (⌘H) and apps whose windows are all minimized or closed now appear in

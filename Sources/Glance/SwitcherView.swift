@@ -61,14 +61,15 @@ struct TileView: View, Equatable {
                     if let profile {
                         Text(profile)
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.black)
                             .lineLimit(1)
                             .truncationMode(.tail)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
-                            .background(Color.black.opacity(0.9), in: RoundedRectangle(cornerRadius: 7))
+                            .background(Color.white, in: RoundedRectangle(cornerRadius: 7))
+                            .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
                             .frame(maxWidth: thumbSize.width * 0.78, alignment: .trailing)
-                            .padding(4)
+                            .alignmentGuide(.bottom) { $0[VerticalAlignment.center] }
                             .help(profile)
                     }
                 }
