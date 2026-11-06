@@ -25,7 +25,6 @@ final class SwitcherPanel: NSPanel {
     init(model: SwitcherModel,
          onHover: @escaping (CGPoint) -> Void,
          onClick: @escaping (CGPoint) -> Void,
-         onDragHover: @escaping (CGPoint?) -> Void,
          onExit: @escaping () -> Void) {
         super.init(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
@@ -46,7 +45,6 @@ final class SwitcherPanel: NSPanel {
 
         mouse.onMove = onHover
         mouse.onClick = onClick
-        mouse.onDragHover = onDragHover
         mouse.onExit = onExit
         mouse.autoresizingMask = [.width, .height]
         chrome.content.addSubview(mouse)
@@ -181,13 +179,12 @@ private final class PanelChrome: NSView {
 }
 
 /// Transparent overlay that turns raw mouse input into hover/click callbacks.
-/// Uses an always-active tracking area since the panel is never key. It's also a
-/// drag destination, so an item dragged over a tile reports where it hovers
-/// (`nil` when it leaves). It never accepts the drop itself.
+/// Uses an always-active tracking area since the panel is never key. It's also
+/// registered as a drag destination only so a drop on the panel is refused rather
+/// than landing anywhere; the controller follows drag hover from the pointer.
 private final class MouseCatcher: NSView {
     var onMove: ((CGPoint) -> Void)?
     var onClick: ((CGPoint) -> Void)?
-    var onDragHover: ((CGPoint?) -> Void)?
     var onExit: (() -> Void)?
 
     override init(frame: NSRect) {
@@ -198,19 +195,8 @@ private final class MouseCatcher: NSView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
-    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        onDragHover?(convert(sender.draggingLocation, from: nil))
-        return []
-    }
-
-    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
-        onDragHover?(convert(sender.draggingLocation, from: nil))
-        return []
-    }
-
-    override func draggingExited(_ sender: NSDraggingInfo?) {
-        onDragHover?(nil)
-    }
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { [] }
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation { [] }
 
     override var isFlipped: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }

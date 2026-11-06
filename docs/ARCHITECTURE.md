@@ -105,10 +105,14 @@ whole design is built around one goal: **⌘⇥ must feel instant.**
   commits, and a bare ⇥ keeps cycling. A drag hovering a tile selects it. After `springLoadDelay` (0.45 s) the
   tile is *armed*, and it's focused only once ⌘ is released, so the window never
   jumps forward while the shortcut is held. The drag can then continue into it. Mouse-up over a tile
-  focuses it; mouse-up anywhere else closes the switcher. Drag hover comes from
-  `NSDraggingDestination` callbacks, since mouse-moved events aren't delivered
-  during a drag. Drag end is detected by the same open-only input poll that
-  watches ⌘. AppKit's own spring-loading calls `makeKeyAndOrderFront` on the window
+  focuses it; mouse-up anywhere else closes the switcher. Mouse-moved events aren't
+  delivered during a drag, so drag hover (and drag end) come from the same
+  open-only input poll that watches ⌘: it hit-tests the pointer each tick. That
+  works for any drag, whatever its pasteboard types, and a drag that sits still
+  doesn't keep overriding a selection made with ⇥. The tile under a drag that
+  hasn't moved since the panel appeared isn't selected. The hovered tile is
+  tracked by window id, so tiles moving after a close don't arm the wrong window.
+  The panel stays a registered drag destination only to refuse drops. AppKit's own spring-loading calls `makeKeyAndOrderFront` on the window
   under a paused drag, which would bring the closed panel back, so
   `SwitcherPanel` ignores that call (the panel is only shown via `show`).
 - **Settings without overhead.** Values are read at the moment they're used, so

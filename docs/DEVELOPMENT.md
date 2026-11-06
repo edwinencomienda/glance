@@ -148,6 +148,8 @@ changes:
 - [ ] In drag mode, hovering a tile while still holding ⌘ only highlights it; it switches
       right after ⌘ is released
 - [ ] Dropping a drag on a tile focuses that window; ending the drag outside the panel closes it
+- [ ] In drag mode, a drag held still over a tile when the panel appears doesn't select it;
+      with the drag resting on a tile, ⇥ moves the selection and it stays put
 - [ ] Chrome and Edge: open windows in different profiles and confirm each profile-name
       badge is readable, stays on one line without Edge’s “Profile” suffix, and matches
       its window in thumbnail and app-icon modes; check

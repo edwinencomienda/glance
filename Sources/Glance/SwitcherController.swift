@@ -72,7 +72,6 @@ final class SwitcherController {
         model: model,
         onHover: { [weak self] in self?.hover(at: $0) },
         onClick: { [weak self] in self?.click(at: $0) },
-        onDragHover: { [weak self] in self?.dragHover(at: $0) },
         onExit: { [weak self] in self?.mouseExited() }
     )
     private lazy var tap = HotkeyTap { type, event in
@@ -83,9 +82,13 @@ final class SwitcherController {
     private var showTimer: Timer?
     private var modifierTimer: Timer?
     private var springTimer: Timer?
-    private var springIndex: Int?
-    /// The drag has hovered `springIndex` long enough; it switches once ⌘ is up.
+    /// The window whose tile the drag is over (by id, so it survives tiles moving).
+    private var springWindow: CGWindowID?
+    /// The drag has hovered `springWindow` long enough; it switches once ⌘ is up.
     private var springArmed = false
+    /// Where the pointer was when the drag-mode panel appeared. A drag that hasn't
+    /// moved since doesn't select the tile that happened to open under it.
+    private var dragStart: CGPoint?
     /// Opened while the mouse button was held (dragging a file, text, …). The panel
     /// then stays open after ⌘ is released so you can hover the drag over a tile.
     private var isDragMode = false
@@ -328,9 +331,10 @@ final class SwitcherController {
         } else if isDragMode {
             if NSEvent.pressedMouseButtons & 1 == 0 {
                 dragEnded()
-            } else if springArmed && !commandHeld {
-                commit()
+                return
             }
+            trackDrag()
+            if springArmed && !commandHeld { commit() }
         } else if !commandHeld {
             commit()
         }
@@ -339,6 +343,7 @@ final class SwitcherController {
     private func present() {
         guard isActive, let screen else { return }
         isShown = true
+        if isDragMode { dragStart = NSEvent.mouseLocation }
         panel.show(size: model.layout.panelSize, on: screen)
         let session = sessionID
         browserProfiles.refresh(model.windows) { [weak self] id, name in
@@ -360,6 +365,9 @@ final class SwitcherController {
         // pointer moves again.
         model.hovered = nil
         model.buttonHot = false
+        // Same for a drag: the keyboard's pick wins over the tile the drag sits on,
+        // until the drag moves to another tile.
+        disarmSpring()
     }
 
     private func commit() {
@@ -379,10 +387,9 @@ final class SwitcherController {
         showTimer = nil
         modifierTimer?.invalidate()
         modifierTimer = nil
-        springTimer?.invalidate()
-        springTimer = nil
-        springIndex = nil
-        springArmed = false
+        disarmSpring()
+        springWindow = nil
+        dragStart = nil
         isDragMode = false
         isShown = false
         isAppMode = false
@@ -506,22 +513,37 @@ final class SwitcherController {
 
     // MARK: - Drag & drop (spring-loading)
 
-    private func dragHover(at point: CGPoint?) {
-        guard isActive else { return }
-        let index = point.flatMap { model.layout.index(at: $0) }
-        if let index, model.selected != index { model.selected = index }
-        guard index != springIndex else { return }
+    /// Follows the drag over the tiles. Read from the pointer by the input poll
+    /// rather than from `NSDraggingDestination` callbacks: those only arrive for
+    /// drags carrying one of the panel's registered pasteboard types, and they
+    /// keep coming while the drag sits still, which undid keyboard selection.
+    private func trackDrag() {
+        let location = NSEvent.mouseLocation
+        if let start = dragStart {
+            guard location != start else { return }
+            dragStart = nil
+        }
+        let index = panel.contentPoint(fromScreen: location)
+            .flatMap { model.layout.index(at: $0) }
+            .flatMap { model.windows.indices.contains($0) ? $0 : nil }
+        let id = index.map { model.windows[$0].id }
+        guard id != springWindow else { return }
 
-        springIndex = index
-        springArmed = false
-        springTimer?.invalidate()
-        springTimer = nil
-        guard index != nil else { return }
+        springWindow = id
+        disarmSpring()
+        guard let index else { return }
+        model.selected = index
         // Arm only; the input poll switches once ⌘ is released, so the window never
         // jumps forward while you're still holding the shortcut.
         springTimer = Timer.scheduledTimer(withTimeInterval: Self.springLoadDelay, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated { self?.springArmed = true }
         }
+    }
+
+    private func disarmSpring() {
+        springTimer?.invalidate()
+        springTimer = nil
+        springArmed = false
     }
 
     /// The drag finished: dropped on a tile focuses that window; anywhere else cancels.

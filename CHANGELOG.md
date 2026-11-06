@@ -23,6 +23,12 @@ for how releases are made.
 
 ### Fixed
 
+- Drag-to-switch now follows the drag for any dragged item, not only files, text,
+  images and the other types the switcher registered for.
+- While dragging over the switcher, ⇥ can move the selection again: the tile under a
+  resting drag no longer snaps it back.
+- A drag-mode switcher that opens under a still drag no longer picks the tile that
+  happens to be under the pointer.
 - Moving the selection with the keyboard now hides the close button on the tile
   under the pointer; it comes back when you move the mouse.
 
