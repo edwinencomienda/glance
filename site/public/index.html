@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glance: every window, one glance away</title>
+  <meta name="description" content="Glance is a tiny, fast, Windows-style window switcher for macOS. Press ⌘⇥ to see every window, with live thumbnails, not just every app. Free and open source.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="canonical" href="https://glance.edwinencomienda.com/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://glance.edwinencomienda.com/">
+  <meta property="og:title" content="Glance: every window, one glance away">
+  <meta property="og:description" content="A tiny, fast, Windows-style window switcher for macOS. Press ⌘⇥ to see every window.">
+  <meta property="og:image" content="https://glance.edwinencomienda.com/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="/" aria-label="Glance home">
+      <img src="/favicon.svg" width="28" height="28" alt="">
+      <span>Glance</span>
+    </a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#keys">Shortcuts</a>
+      <a href="https://github.com/edwinencomienda/glance" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <img class="hero-icon" src="/icon.svg" width="112" height="112" alt="Glance app icon">
+      <h1>Every window,<br>one glance away.</h1>
+      <p class="lede">
+        A tiny, fast, Windows-style window switcher for macOS.
+        Press <span class="combo"><kbd>⌘</kbd><kbd>⇥</kbd></span> to see every window, with live thumbnails,
+        not just every app.
+      </p>
+      <div class="cta">
+        <a class="button primary" href="https://github.com/edwinencomienda/glance/releases/latest/download/Glance.dmg">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M16.37 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.74-.78-2.87-.76-1.47.02-2.83.86-3.59 2.18-1.53 2.66-.39 6.6 1.1 8.75.73 1.05 1.6 2.24 2.73 2.2 1.1-.05 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.07 2.65-2.13.84-1.22 1.18-2.4 1.2-2.46-.03-.01-2.3-.88-2.3-3.52ZM14.2 6.13c.6-.73 1-1.74.9-2.75-.87.04-1.92.58-2.54 1.31-.56.64-1.05 1.67-.92 2.66.97.07 1.96-.49 2.56-1.22Z"/></svg>
+          Download for macOS
+        </a>
+        <a class="button" href="https://github.com/edwinencomienda/glance" rel="noopener">View on GitHub</a>
+      </div>
+      <p class="meta">Free &amp; open source · macOS 14+ · Signed &amp; notarized by Apple</p>
+    </section>
+
+    <section class="demo" aria-label="Illustration of the Glance switcher">
+      <div class="desktop">
+        <div class="panel" aria-hidden="true">
+          <div class="tile t1">
+            <div class="win w-mail"><i></i><i></i><i></i><b></b><b></b><b></b></div>
+            <span>Inbox · Mail</span>
+          </div>
+          <div class="tile t2">
+            <div class="win w-code"><i></i><i></i><i></i><b></b><b></b><b></b><b></b></div>
+            <span>main.swift · Xcode</span>
+          </div>
+          <div class="tile t3">
+            <div class="win w-web"><i></i><i></i><i></i><b></b><b></b></div>
+            <span>Docs · Safari</span>
+          </div>
+          <div class="tile t4">
+            <div class="win w-chat"><i></i><i></i><i></i><b></b><b></b><b></b></div>
+            <span>#design · Slack</span>
+          </div>
+          <div class="tile t5">
+            <div class="win w-notes"><i></i><i></i><i></i><b></b><b></b><b></b></div>
+            <span>Ideas · Notes</span>
+          </div>
+        </div>
+        <div class="keys" aria-hidden="true">
+          <kbd class="hold">⌘</kbd><kbd class="tap">⇥</kbd>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="features">
+      <h2>Built to stay out of your way.</h2>
+      <div class="grid">
+        <article>
+          <h3>Every window, not every app</h3>
+          <p>One tile per window, most recently used first. Two Chrome windows? Two tiles.</p>
+        </article>
+        <article>
+          <h3>Instant tap</h3>
+          <p>A quick <span class="combo"><kbd>⌘</kbd><kbd>⇥</kbd></span> jumps straight to your previous window without drawing anything.</p>
+        </article>
+        <article>
+          <h3>Live thumbnails</h3>
+          <p>Captured with ScreenCaptureKit and cached, so the panel opens with the last frame and updates in place.</p>
+        </article>
+        <article>
+          <h3>Every Space, every display</h3>
+          <p>Windows on all Spaces, including full screen apps. Pick one and Glance takes you there.</p>
+        </article>
+        <article>
+          <h3>Drag to switch</h3>
+          <p>Dragging a file? Press <span class="combo"><kbd>⌘</kbd><kbd>⇥</kbd></span>, hover a window to bring it forward, then drop into it.</p>
+        </article>
+        <article>
+          <h3>Zero idle cost</h3>
+          <p>No timers, no polling. The window list builds in about 5 ms, and a hung app can't freeze it.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="keys" class="keys-section">
+      <h2>Feels like home.</h2>
+      <dl class="shortcuts">
+        <div><dt><kbd>⌘</kbd><kbd>⇥</kbd></dt><dd>Tap for your previous window, hold to see them all</dd></div>
+        <div><dt><kbd>⌘</kbd><kbd>⇧</kbd><kbd>⇥</kbd></dt><dd>Move backward</dd></div>
+        <div><dt><kbd>⌘</kbd><kbd>`</kbd></dt><dd>Only the front app's windows (optional)</dd></div>
+        <div><dt><kbd>W</kbd> <kbd>Q</kbd></dt><dd>Close the window or quit its app, right from the switcher</dd></div>
+        <div><dt><kbd>esc</kbd></dt><dd>Cancel</dd></div>
+      </dl>
+      <p class="note">Prefer to keep the macOS switcher? Use <span class="combo"><kbd>⌥</kbd><kbd>⇥</kbd></span> instead.</p>
+    </section>
+
+    <section class="privacy">
+      <h2>Private by design.</h2>
+      <p>
+        Glance never reads what you type. It needs Accessibility to handle
+        <span class="combo"><kbd>⌘</kbd><kbd>⇥</kbd></span> and Screen Recording for thumbnails, and the
+        only request it makes is a daily check for a new release on GitHub.
+        It never downloads or installs anything by itself.
+      </p>
+      <a class="button primary" href="https://github.com/edwinencomienda/glance/releases/latest/download/Glance.dmg">Download Glance</a>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>© Edwin Encomienda · MIT License</span>
+    <nav>
+      <a href="https://github.com/edwinencomienda/glance/releases" rel="noopener">Releases</a>
+      <a href="https://github.com/edwinencomienda/glance/blob/main/CHANGELOG.md" rel="noopener">Changelog</a>
+      <a href="https://github.com/edwinencomienda/glance" rel="noopener">Source</a>
+    </nav>
+  </footer>
+</body>
+</html>

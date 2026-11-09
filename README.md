@@ -20,7 +20,8 @@
   <img src="docs/images/settings.png" width="420" alt="Glance Settings window">
 </p>
 
-See [docs/FEATURES.md](docs/FEATURES.md) for the full feature list.
+Website: **[glance.edwinencomienda.com](https://glance.edwinencomienda.com)** ·
+see [docs/FEATURES.md](docs/FEATURES.md) for the full feature list.
 
 ## Usage
 

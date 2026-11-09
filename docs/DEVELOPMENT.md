@@ -25,6 +25,7 @@ scripts/package-release.sh  Builds the Developer ID–signed, notarized DMG and 
 .github/workflows/release.yml  Builds and publishes the release when a tag is pushed
 CHANGELOG.md              User-facing changes per version
 docs/                     Developer documentation
+site/                     Landing page (static HTML/CSS, Cloudflare Workers static assets)
 ```
 
 ## Everyday loop
@@ -223,3 +224,22 @@ See [RELEASING.md](RELEASING.md): Semantic Versioning, `CHANGELOG.md`, and
 `scripts/release.sh` for tagging. Pushing a tag runs the GitHub Actions release
 workflow, which publishes a universal (arm64 + x86_64) DMG signed with a
 Developer ID and the hardened runtime, and notarized by Apple.
+
+## Website
+
+The landing page, **https://glance.edwinencomienda.com**, lives in `site/`: plain
+HTML and CSS in `site/public/`, with no build step and no JavaScript. It's served by
+Cloudflare Workers static assets (Worker `glance-site`, config in
+`site/wrangler.jsonc`); `site/public/_headers` sets the security headers.
+
+```sh
+cd site
+npm install      # installs Wrangler locally
+npm run dev      # preview at http://localhost:8787 with the production headers
+npm run deploy   # publish to glance.edwinencomienda.com
+```
+
+Deploys are manual: pushing to GitHub doesn't deploy, so run `npm run deploy` after
+changing `site/`. App releases need no deploy, because the download buttons link to
+the latest GitHub release. See [site/README.md](../site/README.md#deploying) for
+the full runbook: login and API tokens, verifying, rollback and caching.

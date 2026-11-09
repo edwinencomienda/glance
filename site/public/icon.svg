@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Glance — Flat Blue Windows</title>
+  <desc>Flat macOS app icon with three overlapping blue windows and the symmetrical white Glance logo.</desc>
+  <defs>
+    <clipPath id="icon-mask"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+  </defs>
+  <g clip-path="url(#icon-mask)">
+    <rect x="100" y="100" width="824" height="824" fill="#1258E8"/>
+    <rect x="71" y="199" width="470" height="565" rx="48" transform="rotate(-8 306 481.5)" fill="#408CF5"/>
+    <rect x="459" y="323" width="434" height="522" rx="48" transform="rotate(8 676 584)" fill="#22A7F0"/>
+    <rect x="208" y="267" width="481" height="572" rx="48" transform="rotate(-8 448.5 553)" fill="#2877ED"/>
+  </g>
+  <g transform="translate(102.4 102.4) scale(1.6)">
+    <g transform="translate(0 63)" fill="#FFFFFF">
+      <path d="M116 256 A140 140 0 0 1 396 256 L368 256 A112 112 0 0 0 144 256 Z"/>
+      <rect x="198" y="184" width="28" height="52" rx="14"/>
+      <rect x="286" y="184" width="28" height="52" rx="14"/>
+      <rect x="64" y="242" width="384" height="28" rx="14"/>
+    </g>
+  </g>
+</svg>

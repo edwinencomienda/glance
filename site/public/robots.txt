@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://glance.edwinencomienda.com/sitemap.xml

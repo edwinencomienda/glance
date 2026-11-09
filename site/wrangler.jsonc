@@ -1,0 +1,21 @@
+{
+  // Static landing page for Glance, served by Cloudflare Workers static assets.
+  // No Worker script: every request is answered from ./public.
+  // Deploy: see site/README.md ("Deploying").
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "glance-site",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  // Custom domain on the edwinencomienda.com zone (same Cloudflare account).
+  // Wrangler creates the DNS record and certificate on deploy.
+  "routes": [
+    { "pattern": "glance.edwinencomienda.com", "custom_domain": true }
+  ],
+  // Only the custom domain serves the site; no *.workers.dev or preview URLs.
+  "workers_dev": false,
+  "preview_urls": false
+}

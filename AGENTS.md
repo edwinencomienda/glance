@@ -12,6 +12,8 @@ package with no Xcode project. Read `docs/ARCHITECTURE.md` before changing behav
 - `swift build`: compile check
 - `swift test`: unit tests (must pass before committing)
 - `scripts/build-app.sh [--install]`: bundled, signed app (needed to test real behaviour)
+- `cd site && npm run deploy`: publish the landing page (glance.edwinencomienda.com).
+  Runbook in `site/README.md`
 
 ## Rules
 
@@ -28,4 +30,5 @@ package with no Xcode project. Read `docs/ARCHITECTURE.md` before changing behav
   - user-facing behaviour, keys, permissions → `README.md`
   - build, debug, test or release workflow → `docs/DEVELOPMENT.md`
   - components, data flow or design decisions → `docs/ARCHITECTURE.md`
+  - features or copy on the landing page → `site/public/index.html` (then redeploy)
 - Never commit build output (`.build/`, `build/`) or signing material.
