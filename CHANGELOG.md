@@ -7,10 +7,11 @@ for how releases are made.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-09
+
 ### Added
 
 - Chrome and Microsoft Edge window tiles show a white, single-line profile-name badge centered on the bottom border at the right when available.
-
 - Settings → Appearance: choose a small, medium or large app icon on window thumbnails.
 - Hidden apps (⌘H) and apps whose windows are all minimized or closed now appear in
   the switcher as an app icon tile. Choosing one unhides the app, or reopens it the
@@ -128,7 +129,8 @@ The first release.
 - Menu bar icon and app icon (Icon Composer, full-size on macOS 26).
 - Clean panel that follows light and dark mode, with a soft shadow.
 
-[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/edwinencomienda/glance/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/edwinencomienda/glance/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/edwinencomienda/glance/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/edwinencomienda/glance/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/edwinencomienda/glance/compare/v1.1.0...v1.2.0

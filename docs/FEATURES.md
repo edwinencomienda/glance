@@ -17,7 +17,7 @@ added each feature ("Unreleased" means it's on `main` but not released yet). See
 | **Raises the exact window** you pick, even if it was on another Space or in full screen | 1.0.2 |
 | **Works in password fields**: ⌘⇥, ⌘⇧⇥ and ⇥-cycling still work in secure text inputs | 1.0.0 |
 | **Same-app switcher**: ⌘` (or ⌥`) shows only the front app's windows as larger tiles; a tap jumps to its previous window | 1.2.0 |
-| **Close and quit from the switcher**: hover a tile for a ✕ that closes the window (hold ⌥ to quit the app), or press W / Q; the tile animates away and the switcher stays open | Unreleased |
+| **Close and quit from the switcher**: hover a tile for a ✕ that closes the window (hold ⌥ to quit the app), or press W / Q; the tile animates away and the switcher stays open | 1.3.0 |
 
 ## Drag-to-switch
 
@@ -36,7 +36,8 @@ added each feature ("Unreleased" means it's on `main` but not released yet). See
 | **Browser popups hidden**, such as address-bar suggestion dropdowns | 1.0.1 |
 | **Short titled windows listed**, such as Finder's "Emptying the Trash…" progress window | 1.0.3 |
 | **Settings window listed** in ⌘⇥ while it's open | 1.0.0 |
-| **Hidden and minimized apps**: an app that's hidden, or whose windows are all minimized or closed, gets an app icon tile; choosing it brings the app back like a Dock click | Unreleased |
+| **Hidden and minimized apps**: an app that's hidden, or whose windows are all minimized or closed, gets an app icon tile; choosing it brings the app back like a Dock click | 1.4.0 |
+| **Browser profile badges**: Chrome and Microsoft Edge tiles show the window's profile name | 1.4.0 |
 
 ## Multiple displays
 
@@ -51,6 +52,8 @@ added each feature ("Unreleased" means it's on `main` but not released yet). See
 | --- | --- |
 | **Theme**: System / Light / Dark, for the switcher and Settings | 1.0.0 |
 | **Tile size**: small, medium or large | 1.0.0 |
+| **App icon size** on window thumbnails: small, medium or large | 1.4.0 |
+| **Selected tile** has a blue border as well as the grey fill | 1.4.0 |
 | **Window titles** on or off | 1.0.0 |
 | **Clean panel** with a soft shadow that follows light and dark mode | 1.0.0 |
 | **App icon and menu bar logo**, full size on macOS 26 | 1.0.0 |
